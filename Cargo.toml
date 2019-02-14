@@ -1,6 +1,5 @@
 [workspace]
 members = [
     "smeagol",
-    "smeagol-cli",
-    "smeagol-rle",
+    "smeagol-rle"
 ]

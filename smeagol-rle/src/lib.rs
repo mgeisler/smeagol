@@ -1,4 +1,4 @@
-//! Crate for working with run-length encoded (RLE) Life patterns.
+//! Library for working with run-length encoded (RLE) Life patterns.
 #[macro_use]
 extern crate nom;
 
