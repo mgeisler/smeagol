@@ -141,6 +141,20 @@ impl Life {
     }
 
     /// Returns a `Vec` of the coordinates of the alive cells in the Life grid.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> Result<(), smeagol_rle::RleError> {
+    /// // glider
+    /// let mut life = smeagol::Life::from_rle_pattern(b"bob$2bo$3o!")?;
+    ///
+    /// // a glider has a population of 5
+    /// let alive_cells = life.get_alive_cells();
+    /// assert_eq!(alive_cells.len(), 5);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn get_alive_cells(&self) -> Vec<(i64, i64)> {
         self.root.get_alive_cells(&self.store)
     }

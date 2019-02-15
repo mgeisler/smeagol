@@ -1,3 +1,5 @@
+//! Node module.
+
 mod impls;
 mod store;
 mod util;

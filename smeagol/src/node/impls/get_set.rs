@@ -222,6 +222,27 @@ impl NodeId {
             }
         }
     }
+
+    pub fn contains_alive_cells(&self, store: &Store, upper_left: (i64, i64), lower_right: (i64, i64)) -> bool {
+        assert!(upper_left.0 <= lower_right.0);
+        assert!(upper_left.1 <= lower_right.1);
+
+        if self.population(store) == 0 {
+            false
+        } else {
+            match store.get(*self).base {
+                NodeBase::LevelThree { board } => {
+                    unimplemented!()
+                }
+                NodeBase::LevelFour { board } => {
+                    unimplemented!()
+                }
+                NodeBase::Interior { nw, ne, sw, se } => {
+                    unimplemented!()
+                }
+            }
+        }
+    }
 }
 
 fn partition_horiz(coords: &mut [(i64, i64)], pivot: i64) -> usize {

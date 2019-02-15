@@ -113,7 +113,7 @@ fn step_u16x16(board: &u16x16) -> u16x16 {
 }
 
 impl NodeId {
-    fn jump(&self, store: &mut Store) -> NodeId {
+    pub fn jump(&self, store: &mut Store) -> NodeId {
         if let Some(jump) = store.get_jump(*self) {
             return jump;
         }
