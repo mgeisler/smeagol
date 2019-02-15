@@ -24,7 +24,7 @@ impl NodeId {
     /// let empty = store.create_empty(5);
     /// assert_eq!(empty.population(&store), 0);
     ///
-    /// let one_alive = empty.set_cell_alive(&mut store, 0, 0);
+    /// let one_alive = empty.set_cell_alive(&mut store, smeagol::Position::new(0, 0));
     /// assert_eq!(one_alive.population(&store), 1);
     /// ```
     pub fn population(&self, store: &Store) -> u128 {
@@ -32,6 +32,8 @@ impl NodeId {
     }
 
     /// Returns the minimum coordinate that can be used with the node.
+    ///
+    /// For a level `n` node, this is equal to `-2^n`.
     ///
     /// # Examples
     ///
@@ -46,14 +48,15 @@ impl NodeId {
     /// let max = stripes.max_coord(&store);
     /// for x in min..=max {
     ///     for y in min..=max {
+    ///         let pos = smeagol::Position { x, y };
     ///         stripes = if x % 2 == 0 {
-    ///             stripes.set_cell_alive(&mut store, x, y) 
+    ///             stripes.set_cell_alive(&mut store, pos)
     ///         } else {
     ///             stripes
     ///         };
     ///     }
     /// }
-    /// 
+    ///
     /// // half of the node's cells are alive
     /// assert_eq!(stripes.population(&store), 32 * 32 / 2);
     /// ```
@@ -68,6 +71,8 @@ impl NodeId {
 
     /// Returns the maximum coordinate that can be used with the node.
     ///
+    /// For a level `n` node, this is equal to `2^n - 1`.
+    ///
     /// # Examples
     ///
     /// ```
@@ -81,14 +86,15 @@ impl NodeId {
     /// let max = stripes.max_coord(&store);
     /// for x in min..=max {
     ///     for y in min..=max {
+    ///         let pos = smeagol::Position { x, y };
     ///         stripes = if y % 2 == 0 {
-    ///             stripes.set_cell_alive(&mut store, x, y) 
+    ///             stripes.set_cell_alive(&mut store, pos)
     ///         } else {
     ///             stripes
     ///         };
     ///     }
     /// }
-    /// 
+    ///
     /// // half of the node's cells are alive
     /// assert_eq!(stripes.population(&store), 32 * 32 / 2);
     /// ```

@@ -1,83 +1,73 @@
 use crate::{
     node::{NodeBase, NodeId, NodeTemplate, Store},
-    Cell,
+    Cell, Position, Quadrant,
 };
 
+const MIN_LVL3_COORD: i64 = -4;
+const MAX_LVL3_COORD: i64 = 3;
+const MIN_LVL4_COORD: i64 = -8;
+const MAX_LVL4_COORD: i64 = 7;
+
 impl NodeId {
-    pub fn get_cell(&self, store: &Store, x: i64, y: i64) -> Cell {
+    pub fn get_cell(&self, store: &Store, pos: Position) -> Cell {
         match store.get(*self).base {
             NodeBase::LevelThree { board } => {
-                let x_offset = (3 - x) as usize;
-                let y_offset = (y + 4) as usize;
+                let x_offset = (3 - pos.x) as usize;
+                let y_offset = (pos.y + 4) as usize;
                 Cell::new(board.extract(y_offset) & (1 << x_offset) > 0)
             }
             NodeBase::LevelFour { board } => {
-                let x_offset = (7 - x) as usize;
-                let y_offset = (y + 8) as usize;
+                let x_offset = (7 - pos.x) as usize;
+                let y_offset = (pos.y + 8) as usize;
                 Cell::new(board.extract(y_offset) & (1 << x_offset) > 0)
             }
             NodeBase::Interior { ne, nw, se, sw } => {
                 // quarter side length
                 let offset = 1 << (self.level(store) - 2);
 
-                match (x < 0, y < 0) {
-                    (true, true) => {
-                        // nw
-                        nw.get_cell(store, x + offset, y + offset)
-                    }
-                    (false, true) => {
-                        // ne
-                        ne.get_cell(store, x - offset, y + offset)
-                    }
-                    (true, false) => {
-                        // sw
-                        sw.get_cell(store, x + offset, y - offset)
-                    }
-                    (false, false) => {
-                        // se
-                        se.get_cell(store, x - offset, y - offset)
-                    }
+                match pos.quadrant() {
+                    Quadrant::Northwest => nw.get_cell(store, pos.offset(offset, offset)),
+                    Quadrant::Northeast => ne.get_cell(store, pos.offset(-offset, offset)),
+                    Quadrant::Southwest => sw.get_cell(store, pos.offset(offset, -offset)),
+                    Quadrant::Southeast => se.get_cell(store, pos.offset(-offset, -offset)),
                 }
             }
         }
     }
 
-    pub fn set_cell_alive(&self, store: &mut Store, x: i64, y: i64) -> NodeId {
+    pub fn set_cell_alive(&self, store: &mut Store, pos: Position) -> NodeId {
         match store.get(*self).base {
             NodeBase::LevelThree { board } => {
-                let x_offset = (3 - x) as usize;
-                let y_offset = (y + 4) as usize;
+                let x_offset = (3 - pos.x) as usize;
+                let y_offset = (pos.y + 4) as usize;
                 let board = board.replace(y_offset, board.extract(y_offset) | (1 << x_offset));
                 store.create_level_3(board)
             }
             NodeBase::LevelFour { board } => {
-                let x_offset = (7 - x) as usize;
-                let y_offset = (y + 8) as usize;
+                let x_offset = (7 - pos.x) as usize;
+                let y_offset = (pos.y + 8) as usize;
                 let board = board.replace(y_offset, board.extract(y_offset) | (1 << x_offset));
                 store.create_level_4(board)
             }
             NodeBase::Interior { ne, nw, se, sw } => {
+                // quarter side length
                 let offset = 1 << (self.level(store) - 2);
 
-                match (x < 0, y < 0) {
-                    (true, true) => {
-                        // nw
-                        let nw = nw.set_cell_alive(store, x + offset, y + offset);
+                match pos.quadrant() {
+                    Quadrant::Northwest => {
+                        let nw = nw.set_cell_alive(store, pos.offset(offset, offset));
                         store.create_interior(NodeTemplate { nw, ne, sw, se })
                     }
-                    (false, true) => {
-                        // ne
-                        let ne = ne.set_cell_alive(store, x - offset, y + offset);
+                    Quadrant::Northeast => {
+                        let ne = ne.set_cell_alive(store, pos.offset(-offset, offset));
                         store.create_interior(NodeTemplate { nw, ne, sw, se })
                     }
-                    (true, false) => {
-                        // sw
-                        let sw = sw.set_cell_alive(store, x + offset, y - offset);
+                    Quadrant::Southwest => {
+                        let sw = sw.set_cell_alive(store, pos.offset(offset, -offset));
                         store.create_interior(NodeTemplate { nw, ne, sw, se })
                     }
-                    (false, false) => {
-                        // se
-                        let se = se.set_cell_alive(store, x - offset, y - offset);
+                    Quadrant::Southeast => {
+                        let se = se.set_cell_alive(store, pos.offset(-offset, -offset));
                         store.create_interior(NodeTemplate { nw, ne, sw, se })
                     }
                 }
@@ -85,14 +75,15 @@ impl NodeId {
         }
     }
 
-    pub fn get_alive_cells(&self, store: &Store) -> Vec<(i64, i64)> {
+    pub fn get_alive_cells(&self, store: &Store) -> Vec<Position> {
         match store.get(*self).base {
             NodeBase::LevelThree { .. } => {
                 let mut alive_coords = Vec::with_capacity(64);
-                for x in -4..4 {
-                    for y in -4..4 {
-                        if self.get_cell(store, x, y).is_alive() {
-                            alive_coords.push((x, y));
+                for x in MIN_LVL3_COORD..=MAX_LVL3_COORD {
+                    for y in MIN_LVL3_COORD..=MAX_LVL3_COORD {
+                        let pos = Position { x, y };
+                        if self.get_cell(store, pos).is_alive() {
+                            alive_coords.push(pos);
                         }
                     }
                 }
@@ -100,10 +91,11 @@ impl NodeId {
             }
             NodeBase::LevelFour { .. } => {
                 let mut alive_coords = Vec::with_capacity(64);
-                for x in -8..8 {
-                    for y in -8..8 {
-                        if self.get_cell(store, x, y).is_alive() {
-                            alive_coords.push((x, y));
+                for x in MIN_LVL4_COORD..=MAX_LVL4_COORD {
+                    for y in MIN_LVL4_COORD..=MAX_LVL4_COORD {
+                        let pos = Position { x, y };
+                        if self.get_cell(store, pos).is_alive() {
+                            alive_coords.push(pos);
                         }
                     }
                 }
@@ -120,22 +112,22 @@ impl NodeId {
                     alive_cells.extend(
                         nw.get_alive_cells(store)
                             .into_iter()
-                            .map(|(x, y)| (x - offset, y - offset)),
+                            .map(|pos| pos.offset(-offset, -offset)),
                     );
                     alive_cells.extend(
                         ne.get_alive_cells(store)
                             .into_iter()
-                            .map(|(x, y)| (x + offset, y - offset)),
+                            .map(|pos| pos.offset(offset, -offset)),
                     );
                     alive_cells.extend(
                         sw.get_alive_cells(store)
                             .into_iter()
-                            .map(|(x, y)| (x - offset, y + offset)),
+                            .map(|pos| pos.offset(-offset, offset)),
                     );
                     alive_cells.extend(
                         se.get_alive_cells(store)
                             .into_iter()
-                            .map(|(x, y)| (x + offset, y + offset)),
+                            .map(|pos| pos.offset(offset, offset)),
                     );
                 }
 
@@ -147,7 +139,7 @@ impl NodeId {
     pub fn set_cells_alive(
         &self,
         store: &mut Store,
-        coords: impl IntoIterator<Item = (i64, i64)>,
+        coords: impl IntoIterator<Item = Position>,
     ) -> NodeId {
         self.set_cells_alive_recursive(store, &mut coords.into_iter().collect::<Vec<_>>(), 0, 0)
     }
@@ -155,7 +147,7 @@ impl NodeId {
     fn set_cells_alive_recursive(
         &self,
         store: &mut Store,
-        coords: &mut [(i64, i64)],
+        coords: &mut [Position],
         offset_x: i64,
         offset_y: i64,
     ) -> NodeId {
@@ -165,17 +157,17 @@ impl NodeId {
 
         match store.get(*self).base {
             NodeBase::LevelThree { mut board } => {
-                for &mut (x, y) in coords {
-                    let x = (3 - (x - offset_x)) as usize;
-                    let y = ((y - offset_y) + 4) as usize;
+                for &mut pos in coords {
+                    let x = (3 - (pos.x - offset_x)) as usize;
+                    let y = ((pos.y - offset_y) + 4) as usize;
                     board = board.replace(y, board.extract(y) | (1 << x));
                 }
                 store.create_level_3(board)
             }
             NodeBase::LevelFour { mut board } => {
-                for &mut (x, y) in coords {
-                    let x = (7 - (x - offset_x)) as usize;
-                    let y = ((y - offset_y) + 8) as usize;
+                for &mut pos in coords {
+                    let x = (7 - (pos.x - offset_x)) as usize;
+                    let y = ((pos.y - offset_y) + 8) as usize;
                     board = board.replace(y, board.extract(y) | (1 << x));
                 }
                 store.create_level_4(board)
@@ -223,32 +215,153 @@ impl NodeId {
         }
     }
 
-    pub fn contains_alive_cells(&self, store: &Store, upper_left: (i64, i64), lower_right: (i64, i64)) -> bool {
-        assert!(upper_left.0 <= lower_right.0);
-        assert!(upper_left.1 <= lower_right.1);
+    pub fn contains_alive_cells(
+        &self,
+        store: &Store,
+        upper_left: Position,
+        lower_right: Position,
+    ) -> bool {
+        assert!(upper_left.x <= lower_right.x);
+        assert!(upper_left.y <= lower_right.y);
+
+        // quarter side length
+        let offset = 1 << (self.level(store) - 2);
 
         if self.population(store) == 0 {
             false
         } else {
             match store.get(*self).base {
-                NodeBase::LevelThree { board } => {
-                    unimplemented!()
-                }
-                NodeBase::LevelFour { board } => {
-                    unimplemented!()
+                NodeBase::LevelThree { .. } | NodeBase::LevelFour { .. } => {
+                    for x in upper_left.x..=lower_right.x {
+                        for y in upper_left.y..=lower_right.y {
+                            let pos = Position { x, y };
+                            if self.get_cell(store, pos).is_alive() {
+                                return true;
+                            }
+                        }
+                    }
+                    false
                 }
                 NodeBase::Interior { nw, ne, sw, se } => {
-                    unimplemented!()
+                    match (upper_left.quadrant(), lower_right.quadrant()) {
+                        (Quadrant::Northwest, Quadrant::Northwest) => nw.contains_alive_cells(
+                            store,
+                            upper_left.offset(offset, offset),
+                            lower_right.offset(offset, offset),
+                        ),
+                        (Quadrant::Northeast, Quadrant::Northeast) => ne.contains_alive_cells(
+                            store,
+                            upper_left.offset(-offset, offset),
+                            lower_right.offset(-offset, offset),
+                        ),
+                        (Quadrant::Southwest, Quadrant::Southwest) => sw.contains_alive_cells(
+                            store,
+                            upper_left.offset(offset, -offset),
+                            lower_right.offset(offset, -offset),
+                        ),
+                        (Quadrant::Southeast, Quadrant::Southeast) => se.contains_alive_cells(
+                            store,
+                            upper_left.offset(-offset, -offset),
+                            lower_right.offset(-offset, -offset),
+                        ),
+
+                        (Quadrant::Northwest, Quadrant::Northeast) => {
+                            let nw_lower_right = Position::new(-1, lower_right.y);
+                            let ne_upper_left = Position::new(0, upper_left.y);
+                            nw.contains_alive_cells(
+                                store,
+                                upper_left.offset(offset, offset),
+                                nw_lower_right.offset(offset, offset),
+                            ) || ne.contains_alive_cells(
+                                store,
+                                ne_upper_left.offset(-offset, offset),
+                                lower_right.offset(-offset, offset),
+                            )
+                        }
+                        (Quadrant::Northwest, Quadrant::Southwest) => {
+                            let nw_lower_right = Position::new(lower_right.x, -1);
+                            let sw_upper_left = Position::new(upper_left.x, 0);
+                            nw.contains_alive_cells(
+                                store,
+                                upper_left.offset(offset, offset),
+                                nw_lower_right.offset(offset, offset),
+                            ) || sw.contains_alive_cells(
+                                store,
+                                sw_upper_left.offset(offset, -offset),
+                                lower_right.offset(offset, -offset),
+                            )
+                        }
+                        (Quadrant::Southwest, Quadrant::Southeast) => {
+                            let sw_lower_right = Position::new(-1, lower_right.y);
+                            let se_upper_left = Position::new(0, upper_left.y);
+                            sw.contains_alive_cells(
+                                store,
+                                upper_left.offset(offset, -offset),
+                                sw_lower_right.offset(offset, -offset),
+                            ) || ne.contains_alive_cells(
+                                store,
+                                se_upper_left.offset(-offset, -offset),
+                                lower_right.offset(-offset, -offset),
+                            )
+                        }
+                        (Quadrant::Northeast, Quadrant::Southeast) => {
+                            let ne_lower_right = Position::new(lower_right.x, -1);
+                            let se_upper_left = Position::new(upper_left.x, 0);
+                            ne.contains_alive_cells(
+                                store,
+                                upper_left.offset(-offset, offset),
+                                ne_lower_right.offset(-offset, offset),
+                            ) || se.contains_alive_cells(
+                                store,
+                                se_upper_left.offset(-offset, -offset),
+                                lower_right.offset(-offset, -offset),
+                            )
+                        }
+
+                        (Quadrant::Northwest, Quadrant::Southeast) => {
+                            let nw_upper_left = upper_left;
+                            let nw_lower_right = Position::new(-1, -1);
+
+                            let ne_upper_left = Position::new(0, upper_left.y);
+                            let ne_lower_right = Position::new(lower_right.x, -1);
+
+                            let sw_upper_left = Position::new(upper_left.x, 0);
+                            let sw_lower_right = Position::new(-1, lower_right.y);
+
+                            let se_upper_left = Position::new(0, 0);
+                            let se_lower_right = lower_right;
+
+                            nw.contains_alive_cells(
+                                store,
+                                nw_upper_left.offset(offset, offset),
+                                nw_lower_right.offset(offset, offset),
+                            ) || ne.contains_alive_cells(
+                                store,
+                                ne_upper_left.offset(-offset, offset),
+                                ne_lower_right.offset(-offset, offset),
+                            ) || sw.contains_alive_cells(
+                                store,
+                                sw_upper_left.offset(offset, -offset),
+                                sw_lower_right.offset(offset, -offset),
+                            ) || se.contains_alive_cells(
+                                store,
+                                se_upper_left.offset(-offset, -offset),
+                                se_lower_right.offset(-offset, -offset),
+                            )
+                        }
+
+                        _ => unreachable!(),
+                    }
                 }
             }
         }
     }
 }
 
-fn partition_horiz(coords: &mut [(i64, i64)], pivot: i64) -> usize {
+fn partition_horiz(coords: &mut [Position], pivot: i64) -> usize {
     let mut next_index = 0;
     for i in 0..coords.len() {
-        if coords[i].0 < pivot {
+        if coords[i].x < pivot {
             coords.swap(i, next_index);
             next_index += 1;
         }
@@ -256,10 +369,10 @@ fn partition_horiz(coords: &mut [(i64, i64)], pivot: i64) -> usize {
     next_index
 }
 
-fn partition_vert(coords: &mut [(i64, i64)], pivot: i64) -> usize {
+fn partition_vert(coords: &mut [Position], pivot: i64) -> usize {
     let mut next_index = 0;
     for i in 0..coords.len() {
-        if coords[i].1 < pivot {
+        if coords[i].y < pivot {
             coords.swap(i, next_index);
             next_index += 1;
         }
@@ -279,12 +392,15 @@ mod tests {
         let max = empty.max_coord(&store);
         for x in min..=max {
             for y in min..=max {
-                let one_alive = empty.set_cell_alive(&mut store, x, y);
-                let also_one_alive = empty.set_cells_alive(&mut store, vec![(x, y)]);
+                let pos = Position { x, y };
+                let one_alive = empty.set_cell_alive(&mut store, pos);
+                let also_one_alive = empty.set_cells_alive(&mut store, vec![pos]);
                 assert_eq!(one_alive, also_one_alive);
-                assert!(one_alive.get_cell(&store, x, y).is_alive());
-                assert_eq!(one_alive.get_alive_cells(&store), vec![(x, y)]);
+                assert!(one_alive.get_cell(&store, pos).is_alive());
+                assert_eq!(one_alive.get_alive_cells(&store), vec![pos]);
                 assert_eq!(one_alive.population(&store), 1);
+                assert!(one_alive.contains_alive_cells(&store, pos, pos));
+                assert!(one_alive.contains_alive_cells(&store, Position::new(min, min), Position::new(max, max)));
             }
         }
     }

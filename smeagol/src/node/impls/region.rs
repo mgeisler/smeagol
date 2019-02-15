@@ -252,6 +252,7 @@ fn centered_vert(store: &mut Store, n: NodeId, s: NodeId) -> NodeId {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Position;
     use packed_simd::u16x16;
 
     fn filled_square(store: &mut Store, level: u8) -> NodeId {
@@ -260,7 +261,8 @@ mod tests {
         let max = filled.max_coord(store);
         for x in min..=max {
             for y in min..=max {
-                filled = filled.set_cell_alive(store, x, y);
+                let pos = Position { x, y };
+                filled = filled.set_cell_alive(store, pos);
             }
         }
         filled
@@ -460,7 +462,8 @@ mod tests {
             let mut node = store.create_empty(5);
             for x in -8..8 {
                 for y in -8..8 {
-                    node = node.set_cell_alive(&mut store, x, y);
+                    let pos = Position { x, y };
+                    node = node.set_cell_alive(&mut store, pos);
                 }
             }
             assert_eq!(
@@ -475,7 +478,8 @@ mod tests {
             let mut node = store.create_empty(5);
             for x in -12..-4 {
                 for y in -4..4 {
-                    node = node.set_cell_alive(&mut store, x, y);
+                    let pos = Position { x, y };
+                    node = node.set_cell_alive(&mut store, pos);
                 }
             }
             assert_eq!(
@@ -490,7 +494,8 @@ mod tests {
             let mut node = store.create_empty(5);
             for x in 4..12 {
                 for y in -4..4 {
-                    node = node.set_cell_alive(&mut store, x, y);
+                    let pos = Position { x, y };
+                    node = node.set_cell_alive(&mut store, pos);
                 }
             }
             assert_eq!(
@@ -505,7 +510,8 @@ mod tests {
             let mut node = store.create_empty(5);
             for x in -4..4 {
                 for y in -12..-4 {
-                    node = node.set_cell_alive(&mut store, x, y);
+                    let pos = Position { x, y };
+                    node = node.set_cell_alive(&mut store, pos);
                 }
             }
             assert_eq!(
@@ -520,7 +526,8 @@ mod tests {
             let mut node = store.create_empty(5);
             for x in -4..4 {
                 for y in 4..12 {
-                    node = node.set_cell_alive(&mut store, x, y);
+                    let pos = Position { x, y };
+                    node = node.set_cell_alive(&mut store, pos);
                 }
             }
             assert_eq!(
@@ -595,7 +602,8 @@ mod tests {
             let mut node = store.create_empty(6);
             for x in -16..16 {
                 for y in -16..16 {
-                    node = node.set_cell_alive(&mut store, x, y);
+                    let pos = Position { x, y };
+                    node = node.set_cell_alive(&mut store, pos);
                 }
             }
             assert_eq!(
@@ -610,7 +618,8 @@ mod tests {
             let mut node = store.create_empty(6);
             for x in -24..-8 {
                 for y in -8..8 {
-                    node = node.set_cell_alive(&mut store, x, y);
+                    let pos = Position { x, y };
+                    node = node.set_cell_alive(&mut store, pos);
                 }
             }
             assert_eq!(
@@ -625,7 +634,8 @@ mod tests {
             let mut node = store.create_empty(6);
             for x in 8..24 {
                 for y in -8..8 {
-                    node = node.set_cell_alive(&mut store, x, y);
+                    let pos = Position { x, y };
+                    node = node.set_cell_alive(&mut store, pos);
                 }
             }
             assert_eq!(
@@ -640,7 +650,8 @@ mod tests {
             let mut node = store.create_empty(6);
             for x in -8..8 {
                 for y in -24..-8 {
-                    node = node.set_cell_alive(&mut store, x, y);
+                    let pos = Position { x, y };
+                    node = node.set_cell_alive(&mut store, pos);
                 }
             }
             assert_eq!(
@@ -655,7 +666,8 @@ mod tests {
             let mut node = store.create_empty(6);
             for x in -8..8 {
                 for y in 8..24 {
-                    node = node.set_cell_alive(&mut store, x, y);
+                    let pos = Position { x, y };
+                    node = node.set_cell_alive(&mut store, pos);
                 }
             }
             assert_eq!(

@@ -1,10 +1,15 @@
 const REPS: usize = 10;
 
-fn equal_with_offset(before: &[(i64, i64)], after: &[(i64, i64)], x_offset: i64, y_offset: i64) {
+fn equal_with_offset(
+    before: &[smeagol::Position],
+    after: &[smeagol::Position],
+    x_offset: i64,
+    y_offset: i64,
+) {
     assert_eq!(before.len(), after.len());
-    for (&(x0, y0), &(x1, y1)) in before.iter().zip(after.iter()) {
-        assert_eq!(x0 + x_offset, x1);
-        assert_eq!(y0 + y_offset, y1);
+    for (pos0, pos1) in before.iter().zip(after.iter()) {
+        assert_eq!(pos0.x + x_offset, pos1.x);
+        assert_eq!(pos0.y + y_offset, pos1.y);
     }
 }
 

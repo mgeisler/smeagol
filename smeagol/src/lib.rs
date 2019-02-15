@@ -45,6 +45,44 @@ impl Cell {
     }
 }
 
+/// The position of a cell in a Life grid.
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct Position {
+    /// The x coordinate.
+    pub x: i64,
+    /// The y coordinate.
+    pub y: i64,
+}
+
+impl Position {
+    pub fn new(x: i64, y: i64) -> Self {
+        Self { x, y }
+    }
+
+    pub fn offset(&self, x_offset: i64, y_offset: i64) -> Self {
+        Self {
+            x: self.x + x_offset,
+            y: self.y + y_offset,
+        }
+    }
+
+    pub fn quadrant(&self) -> Quadrant {
+        match (self.x < 0, self.y < 0) {
+            (true, true) => Quadrant::Northwest,
+            (false, true) => Quadrant::Northeast,
+            (true, false) => Quadrant::Southwest,
+            (false, false) => Quadrant::Southeast,
+        }
+    }
+}
+
+pub enum Quadrant {
+    Northeast,
+    Northwest,
+    Southeast,
+    Southwest,
+}
+
 /// Conway's Game of Life.
 #[derive(Clone, Debug)]
 pub struct Life {
@@ -110,17 +148,17 @@ impl Life {
         let alive_cells = rle
             .alive_cells()
             .into_iter()
-            .map(|(x, y)| (i64::from(x), i64::from(y)))
+            .map(|(x, y)| Position::new(x as i64, y as i64))
             .collect::<Vec<_>>();
 
         let mut store = Store::new();
         let mut root = store.create_empty(INITIAL_LEVEL);
 
         if !alive_cells.is_empty() {
-            let x_min = alive_cells.iter().min_by_key(|&(x, _)| x).unwrap().0;
-            let x_max = alive_cells.iter().max_by_key(|&(x, _)| x).unwrap().0;
-            let y_min = alive_cells.iter().min_by_key(|&(_, y)| y).unwrap().1;
-            let y_max = alive_cells.iter().max_by_key(|&(_, y)| y).unwrap().1;
+            let x_min = alive_cells.iter().min_by_key(|pos| pos.x).unwrap().x;
+            let x_max = alive_cells.iter().max_by_key(|pos| pos.x).unwrap().x;
+            let y_min = alive_cells.iter().min_by_key(|pos| pos.y).unwrap().y;
+            let y_max = alive_cells.iter().max_by_key(|pos| pos.y).unwrap().y;
 
             while x_min < root.min_coord(&store)
                 || x_max > root.max_coord(&store)
@@ -155,7 +193,7 @@ impl Life {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_alive_cells(&self) -> Vec<(i64, i64)> {
+    pub fn get_alive_cells(&self) -> Vec<Position> {
         self.root.get_alive_cells(&self.store)
     }
 
