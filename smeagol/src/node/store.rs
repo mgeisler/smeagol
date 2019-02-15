@@ -1,4 +1,4 @@
-use crate::node::{Index, Node, NodeBase, NodeId};
+use crate::node::{Node, NodeBase, NodeId};
 
 mod create;
 
@@ -59,20 +59,5 @@ impl Store {
 
     pub fn get_step(&self, id: NodeId) -> Option<NodeId> {
         self.steps[id.index.0 as usize]
-    }
-
-    fn add_node(&mut self, node: Node) -> NodeId {
-        if let Some(&id) = self.ids.get(&node.base) {
-            id
-        } else {
-            let id = NodeId {
-                index: Index(self.nodes.len() as u32),
-            };
-            self.ids.insert(node.base, id);
-            self.nodes.push(node);
-            self.steps.push(None);
-            self.jumps.push(None);
-            id
-        }
     }
 }

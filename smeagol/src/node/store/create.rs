@@ -1,7 +1,22 @@
-use crate::node::{Node, NodeTemplate, NodeBase, NodeId, Store};
+use crate::node::{Index, Node, NodeBase, NodeId, NodeTemplate, Store};
 use packed_simd::{u16x16, u8x8};
 
 impl Store {
+    fn add_node(&mut self, node: Node) -> NodeId {
+        if let Some(&id) = self.ids.get(&node.base) {
+            id
+        } else {
+            let id = NodeId {
+                index: Index(self.nodes.len() as u32),
+            };
+            self.ids.insert(node.base, id);
+            self.nodes.push(node);
+            self.steps.push(None);
+            self.jumps.push(None);
+            id
+        }
+    }
+
     pub fn create_level_3(&mut self, board: u8x8) -> NodeId {
         let node = Node {
             base: NodeBase::LevelThree { board },

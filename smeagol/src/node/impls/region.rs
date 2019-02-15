@@ -1,5 +1,5 @@
-use crate::node::{self, NodeBase, NodeId, NodeTemplate, Store};
-use packed_simd::{u8x8};
+use crate::node::{util, NodeBase, NodeId, NodeTemplate, Store};
+use packed_simd::u8x8;
 
 impl NodeId {
     pub fn expand(&self, store: &mut Store) -> NodeId {
@@ -136,14 +136,14 @@ impl NodeId {
                 let mut board_array = [0; 16];
                 board.write_to_slice_unaligned(&mut board_array);
                 let level_3_board = u8x8::new(
-                    node::center(board_array[4]),
-                    node::center(board_array[5]),
-                    node::center(board_array[6]),
-                    node::center(board_array[7]),
-                    node::center(board_array[8]),
-                    node::center(board_array[9]),
-                    node::center(board_array[10]),
-                    node::center(board_array[11]),
+                    util::center(board_array[4]),
+                    util::center(board_array[5]),
+                    util::center(board_array[6]),
+                    util::center(board_array[7]),
+                    util::center(board_array[8]),
+                    util::center(board_array[9]),
+                    util::center(board_array[10]),
+                    util::center(board_array[11]),
                 );
                 store.create_level_3(level_3_board)
             }
@@ -226,14 +226,14 @@ fn centered_vert(store: &mut Store, n: NodeId, s: NodeId) -> NodeId {
             s_board.write_to_slice_unaligned(&mut s_board_array);
 
             let level_3_board = u8x8::new(
-                node::center(n_board_array[12]),
-                node::center(n_board_array[13]),
-                node::center(n_board_array[14]),
-                node::center(n_board_array[15]),
-                node::center(s_board_array[0]),
-                node::center(s_board_array[1]),
-                node::center(s_board_array[2]),
-                node::center(s_board_array[3]),
+                util::center(n_board_array[12]),
+                util::center(n_board_array[13]),
+                util::center(n_board_array[14]),
+                util::center(n_board_array[15]),
+                util::center(s_board_array[0]),
+                util::center(s_board_array[1]),
+                util::center(s_board_array[2]),
+                util::center(s_board_array[3]),
             );
             store.create_level_3(level_3_board)
         }
@@ -256,8 +256,10 @@ mod tests {
 
     fn filled_square(store: &mut Store, level: u8) -> NodeId {
         let mut filled = store.create_empty(level);
-        for x in filled.min_coord(store)..=filled.max_coord(store) {
-            for y in filled.min_coord(store)..=filled.max_coord(store) {
+        let min = filled.min_coord(store);
+        let max = filled.max_coord(store);
+        for x in min..=max {
+            for y in min..=max {
                 filled = filled.set_cell_alive(store, x, y);
             }
         }
@@ -461,7 +463,10 @@ mod tests {
                     node = node.set_cell_alive(&mut store, x, y);
                 }
             }
-            assert_eq!(node.center_subnode(&mut store), filled_square(&mut store, 4));
+            assert_eq!(
+                node.center_subnode(&mut store),
+                filled_square(&mut store, 4)
+            );
         }
 
         #[test]
@@ -473,7 +478,10 @@ mod tests {
                     node = node.set_cell_alive(&mut store, x, y);
                 }
             }
-            assert_eq!(node.west_subsubnode(&mut store), filled_square(&mut store, 3));
+            assert_eq!(
+                node.west_subsubnode(&mut store),
+                filled_square(&mut store, 3)
+            );
         }
 
         #[test]
@@ -485,7 +493,10 @@ mod tests {
                     node = node.set_cell_alive(&mut store, x, y);
                 }
             }
-            assert_eq!(node.east_subsubnode(&mut store), filled_square(&mut store, 3));
+            assert_eq!(
+                node.east_subsubnode(&mut store),
+                filled_square(&mut store, 3)
+            );
         }
 
         #[test]
@@ -587,7 +598,10 @@ mod tests {
                     node = node.set_cell_alive(&mut store, x, y);
                 }
             }
-            assert_eq!(node.center_subnode(&mut store), filled_square(&mut store, 5));
+            assert_eq!(
+                node.center_subnode(&mut store),
+                filled_square(&mut store, 5)
+            );
         }
 
         #[test]
@@ -599,7 +613,10 @@ mod tests {
                     node = node.set_cell_alive(&mut store, x, y);
                 }
             }
-            assert_eq!(node.west_subsubnode(&mut store), filled_square(&mut store, 4));
+            assert_eq!(
+                node.west_subsubnode(&mut store),
+                filled_square(&mut store, 4)
+            );
         }
 
         #[test]
@@ -611,7 +628,10 @@ mod tests {
                     node = node.set_cell_alive(&mut store, x, y);
                 }
             }
-            assert_eq!(node.east_subsubnode(&mut store), filled_square(&mut store, 4));
+            assert_eq!(
+                node.east_subsubnode(&mut store),
+                filled_square(&mut store, 4)
+            );
         }
 
         #[test]

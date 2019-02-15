@@ -1,4 +1,4 @@
-use crate::node::{self, NodeBase, NodeId, NodeTemplate, Store};
+use crate::node::{util, NodeBase, NodeId, NodeTemplate, Store};
 use packed_simd::{u16x16, u8x8};
 
 #[derive(Clone, Copy, Debug)]
@@ -121,6 +121,7 @@ impl NodeId {
         let jump = match store.get(*self).base {
             NodeBase::LevelThree { .. } => panic!(),
             NodeBase::LevelFour { mut board } => {
+                // step four times
                 board = step_u16x16(&board);
                 board = step_u16x16(&board);
                 board = step_u16x16(&board);
@@ -130,14 +131,14 @@ impl NodeId {
                 board.write_to_slice_unaligned(&mut board_array);
 
                 let level_3_board = u8x8::new(
-                    node::center(board_array[4]),
-                    node::center(board_array[5]),
-                    node::center(board_array[6]),
-                    node::center(board_array[7]),
-                    node::center(board_array[8]),
-                    node::center(board_array[9]),
-                    node::center(board_array[10]),
-                    node::center(board_array[11]),
+                    util::center(board_array[4]),
+                    util::center(board_array[5]),
+                    util::center(board_array[6]),
+                    util::center(board_array[7]),
+                    util::center(board_array[8]),
+                    util::center(board_array[9]),
+                    util::center(board_array[10]),
+                    util::center(board_array[11]),
                 );
                 store.create_level_3(level_3_board)
             }
@@ -222,14 +223,14 @@ impl NodeId {
                 board.write_to_slice_unaligned(&mut board_array);
 
                 let level_3_board = u8x8::new(
-                    node::center(board_array[4]),
-                    node::center(board_array[5]),
-                    node::center(board_array[6]),
-                    node::center(board_array[7]),
-                    node::center(board_array[8]),
-                    node::center(board_array[9]),
-                    node::center(board_array[10]),
-                    node::center(board_array[11]),
+                    util::center(board_array[4]),
+                    util::center(board_array[5]),
+                    util::center(board_array[6]),
+                    util::center(board_array[7]),
+                    util::center(board_array[8]),
+                    util::center(board_array[9]),
+                    util::center(board_array[10]),
+                    util::center(board_array[11]),
                 );
                 store.create_level_3(level_3_board)
             }
@@ -333,7 +334,6 @@ mod tests {
     #[test]
     fn jump_glider() {
         let mut store = Store::new();
-        store.set_step_log_2(0);
 
         let glider = store.create_level_4(u16x16::new(
             0b0000_0000_0000_0000,

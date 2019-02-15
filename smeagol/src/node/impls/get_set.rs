@@ -17,6 +17,7 @@ impl NodeId {
                 Cell::new(board.extract(y_offset) & (1 << x_offset) > 0)
             }
             NodeBase::Interior { ne, nw, se, sw } => {
+                // quarter side length
                 let offset = 1 << (self.level(store) - 2);
 
                 match (x < 0, y < 0) {
@@ -86,7 +87,17 @@ impl NodeId {
 
     pub fn get_alive_cells(&self, store: &Store) -> Vec<(i64, i64)> {
         match store.get(*self).base {
-            NodeBase::LevelThree { .. } => panic!(),
+            NodeBase::LevelThree { .. } => {
+                let mut alive_coords = Vec::with_capacity(64);
+                for x in -4..4 {
+                    for y in -4..4 {
+                        if self.get_cell(store, x, y).is_alive() {
+                            alive_coords.push((x, y));
+                        }
+                    }
+                }
+                alive_coords
+            }
             NodeBase::LevelFour { .. } => {
                 let mut alive_coords = Vec::with_capacity(64);
                 for x in -8..8 {
@@ -153,6 +164,14 @@ impl NodeId {
         }
 
         match store.get(*self).base {
+            NodeBase::LevelThree { mut board } => {
+                for &mut (x, y) in coords {
+                    let x = (3 - (x - offset_x)) as usize;
+                    let y = ((y - offset_y) + 4) as usize;
+                    board = board.replace(y, board.extract(y) | (1 << x));
+                }
+                store.create_level_3(board)
+            }
             NodeBase::LevelFour { mut board } => {
                 for &mut (x, y) in coords {
                     let x = (7 - (x - offset_x)) as usize;
@@ -171,6 +190,7 @@ impl NodeId {
                 let horiz_cutoff = partition_horiz(south, offset_x);
                 let (southwest, southeast) = south.split_at_mut(horiz_cutoff);
 
+                // quarter side length
                 let offset = 1 << (self.level(store) - 2);
 
                 let nw = nw.set_cells_alive_recursive(
@@ -200,7 +220,6 @@ impl NodeId {
 
                 store.create_interior(NodeTemplate { nw, ne, sw, se })
             }
-            _ => panic!(),
         }
     }
 }
@@ -225,4 +244,54 @@ fn partition_vert(coords: &mut [(i64, i64)], pivot: i64) -> usize {
         }
     }
     next_index
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn get_set_helper(level: u8) {
+        let mut store = Store::new();
+        let empty = store.create_empty(level);
+
+        let min = empty.min_coord(&store);
+        let max = empty.max_coord(&store);
+        for x in min..=max {
+            for y in min..=max {
+                let one_alive = empty.set_cell_alive(&mut store, x, y);
+                let also_one_alive = empty.set_cells_alive(&mut store, vec![(x, y)]);
+                assert_eq!(one_alive, also_one_alive);
+                assert!(one_alive.get_cell(&store, x, y).is_alive());
+                assert_eq!(one_alive.get_alive_cells(&store), vec![(x, y)]);
+                assert_eq!(one_alive.population(&store), 1);
+            }
+        }
+    }
+
+    mod level_3 {
+        use super::*;
+
+        #[test]
+        fn get_set() {
+            get_set_helper(3);
+        }
+    }
+
+    mod level_4 {
+        use super::*;
+
+        #[test]
+        fn get_set() {
+            get_set_helper(4);
+        }
+    }
+
+    mod level_5 {
+        use super::*;
+
+        #[test]
+        fn get_set() {
+            get_set_helper(5);
+        }
+    }
 }

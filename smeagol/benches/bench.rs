@@ -52,5 +52,11 @@ fn bench_step_sir_robin_1024(c: &mut criterion::Criterion) {
     });
 }
 
-criterion_group!(benches,bench_create_glider, bench_create_sir_robin, bench_step_glider_1024, bench_step_sir_robin_1024);
+criterion_group!(
+    benches,
+    bench_create_glider,
+    bench_create_sir_robin,
+    bench_step_glider_1024,
+    bench_step_sir_robin_1024
+);
 criterion_main!(benches);
