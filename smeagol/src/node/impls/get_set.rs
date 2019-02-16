@@ -10,7 +10,7 @@ const MAX_LVL4_COORD: i64 = 7;
 
 impl NodeId {
     pub fn get_cell(&self, store: &Store, pos: Position) -> Cell {
-        match store.get(*self).base {
+        match self.base(store) {
             NodeBase::LevelThree { board } => {
                 let x_offset = (3 - pos.x) as usize;
                 let y_offset = (pos.y + 4) as usize;
@@ -36,7 +36,7 @@ impl NodeId {
     }
 
     pub fn set_cell_alive(&self, store: &mut Store, pos: Position) -> NodeId {
-        match store.get(*self).base {
+        match self.base(store) {
             NodeBase::LevelThree { board } => {
                 let x_offset = (3 - pos.x) as usize;
                 let y_offset = (pos.y + 4) as usize;
@@ -76,7 +76,7 @@ impl NodeId {
     }
 
     pub fn get_alive_cells(&self, store: &Store) -> Vec<Position> {
-        match store.get(*self).base {
+        match self.base(store) {
             NodeBase::LevelThree { .. } => {
                 let mut alive_coords = Vec::with_capacity(64);
                 for x in MIN_LVL3_COORD..=MAX_LVL3_COORD {
@@ -155,7 +155,7 @@ impl NodeId {
             return *self;
         }
 
-        match store.get(*self).base {
+        match self.base(store) {
             NodeBase::LevelThree { mut board } => {
                 for &mut pos in coords {
                     let x = (3 - (pos.x - offset_x)) as usize;
@@ -230,7 +230,7 @@ impl NodeId {
         if self.population(store) == 0 {
             false
         } else {
-            match store.get(*self).base {
+            match self.base(store) {
                 NodeBase::LevelThree { .. } | NodeBase::LevelFour { .. } => {
                     for x in upper_left.x..=lower_right.x {
                         for y in upper_left.y..=lower_right.y {

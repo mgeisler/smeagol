@@ -1,6 +1,10 @@
-use crate::node::{NodeId, Store};
+use crate::node::{NodeId, Store, NodeBase};
 
 impl NodeId {
+    pub fn base(&self, store: &Store) -> NodeBase {
+        store.get(*self).base
+    }
+
     /// Returns the level of the node.
     ///
     /// # Examples
@@ -14,7 +18,7 @@ impl NodeId {
         store.get(*self).level
     }
 
-    /// Returns the population of the node.
+    /// Returns the number of alive cells in the node.
     ///
     /// # Examples
     ///

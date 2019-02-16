@@ -1,7 +1,9 @@
-use crate::node::{Index, Node, NodeBase, NodeId, NodeTemplate, Store};
+use crate::node::{MAX_LEVEL, Index, Node, NodeBase, NodeId, NodeTemplate, Store};
 use packed_simd::{u16x16, u8x8};
 
+/// Methods to create new nodes.
 impl Store {
+    /// Adds a node to the store.
     fn add_node(&mut self, node: Node) -> NodeId {
         if let Some(&id) = self.ids.get(&node.base) {
             id
@@ -17,6 +19,21 @@ impl Store {
         }
     }
 
+    /// Creates a level 3 node from the given 8 by 8 board.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use packed_simd::u8x8;
+    ///
+    /// let mut store = smeagol::node::Store::new();
+    ///
+    /// let empty = store.create_level_3(u8x8::splat(0));
+    /// assert_eq!(empty.population(&store), 0);
+    ///
+    /// let filled = store.create_level_3(u8x8::splat(u8::max_value()));
+    /// assert_eq!(filled.population(&store), 8 * 8);
+    /// ```
     pub fn create_level_3(&mut self, board: u8x8) -> NodeId {
         let node = Node {
             base: NodeBase::LevelThree { board },
@@ -26,6 +43,21 @@ impl Store {
         self.add_node(node)
     }
 
+    /// Creates a level 4 node from the given 16 by 16 board.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use packed_simd::u16x16;
+    ///
+    /// let mut store = smeagol::node::Store::new();
+    ///
+    /// let empty = store.create_level_4(u16x16::splat(0));
+    /// assert_eq!(empty.population(&store), 0);
+    ///
+    /// let filled = store.create_level_4(u16x16::splat(u16::max_value()));
+    /// assert_eq!(filled.population(&store), 16 * 16);
+    /// ```
     pub fn create_level_4(&mut self, board: u16x16) -> NodeId {
         let node = Node {
             base: NodeBase::LevelFour { board },
@@ -35,15 +67,24 @@ impl Store {
         self.add_node(node)
     }
 
+    /// Creates an interior node from four children nodes.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the new node has a level greater than 64, the maximum level a node can have.
     pub fn create_interior(&mut self, template: NodeTemplate) -> NodeId {
-        let level = self.get(template.nw).level;
+        let level = template.ne.level(self);
+        assert_eq!(template.ne.level(self), level);
+        assert_eq!(template.sw.level(self), level);
+        assert_eq!(template.se.level(self), level);
+
         let new_level = level + 1;
-        if new_level > 64 {
+        if new_level > MAX_LEVEL {
             panic!();
         }
 
-        match level {
-            3 => {
+        match new_level {
+            4 => {
                 match (
                     self.get(template.nw).base,
                     self.get(template.ne).base,
@@ -101,16 +142,30 @@ impl Store {
                         se: template.se,
                     },
                     level: new_level,
-                    population: self.get(template.nw).population
-                        + self.get(template.ne).population
-                        + self.get(template.sw).population
-                        + self.get(template.se).population,
+                    population: template.nw.population(self)
+                        + template.ne.population(self)
+                        + template.sw.population(self)
+                        + template.se.population(self)
                 };
                 self.add_node(node)
             }
         }
     }
 
+    /// Creates a node of the given level with no alive cells.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the level is less than 3.
+    /// 
+    /// # Examples
+    ///
+    /// ```
+    /// let mut store = smeagol::node::Store::new();
+    /// let mut empty = store.create_empty(10);
+    /// assert_eq!(empty.level(&store), 10);
+    /// assert_eq!(empty.population(&store), 0);
+    /// ```
     pub fn create_empty(&mut self, level: u8) -> NodeId {
         match level {
             0 | 1 | 2 => panic!(),
@@ -126,5 +181,17 @@ impl Store {
                 })
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic]
+    fn create_empty_panic() {
+        let mut store = Store::new();
+        store.create_empty(0);
     }
 }

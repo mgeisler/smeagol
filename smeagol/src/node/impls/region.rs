@@ -2,8 +2,12 @@ use crate::node::{util, NodeBase, NodeId, NodeTemplate, Store};
 use packed_simd::u8x8;
 
 impl NodeId {
+    /// # Panics
+    ///
+    /// Panics if the node is level 3 or level 4.
     pub fn expand(&self, store: &mut Store) -> NodeId {
-        match store.get(*self).base {
+        match self.base(store) {
+            NodeBase::LevelThree { .. } | NodeBase::LevelFour { .. } => panic!(),
             NodeBase::Interior { nw, ne, sw, se } => {
                 let empty = store.create_empty(self.level(store) - 1);
 
@@ -37,12 +41,26 @@ impl NodeId {
 
                 store.create_interior(NodeTemplate { nw, ne, sw, se })
             }
-            _ => panic!(),
         }
     }
 
+    /// Returns the northwest quadrant of the node.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the node is level 3.
+    ///
+    /// # Diagram
+    ///
+    /// ```txt
+    /// +---+---+
+    /// | * |   |
+    /// +---+---+
+    /// |   |   |
+    /// +---+---+
+    /// ```
     pub fn nw(&self, store: &mut Store) -> NodeId {
-        match store.get(*self).base {
+        match self.base(store) {
             NodeBase::LevelThree { .. } => panic!(),
             NodeBase::LevelFour { board } => {
                 let mut board_array = [0; 16];
@@ -63,8 +81,23 @@ impl NodeId {
         }
     }
 
+    /// Returns the northeast quadrant of the node.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the node is level 3.
+    ///
+    /// # Diagram
+    ///
+    /// ```txt
+    /// +---+---+
+    /// |   | * |
+    /// +---+---+
+    /// |   |   |
+    /// +---+---+
+    /// ```
     pub fn ne(&self, store: &mut Store) -> NodeId {
-        match store.get(*self).base {
+        match self.base(store) {
             NodeBase::LevelThree { .. } => panic!(),
             NodeBase::LevelFour { board } => {
                 let mut board_array = [0; 16];
@@ -85,8 +118,23 @@ impl NodeId {
         }
     }
 
+    /// Returns the southwest quadrant of the node.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the node is level 3.
+    ///
+    /// # Diagram
+    ///
+    /// ```txt
+    /// +---+---+
+    /// |   |   |
+    /// +---+---+
+    /// | * |   |
+    /// +---+---+
+    /// ```
     pub fn sw(&self, store: &mut Store) -> NodeId {
-        match store.get(*self).base {
+        match self.base(store) {
             NodeBase::LevelThree { .. } => panic!(),
             NodeBase::LevelFour { board } => {
                 let mut board_array = [0; 16];
@@ -107,8 +155,23 @@ impl NodeId {
         }
     }
 
+    /// Returns the southeast quadrant of the node.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the node is level 3.
+    ///
+    /// # Diagram
+    ///
+    /// ```txt
+    /// +---+---+
+    /// |   |   |
+    /// +---+---+
+    /// |   | * |
+    /// +---+---+
+    /// ```
     pub fn se(&self, store: &mut Store) -> NodeId {
-        match store.get(*self).base {
+        match self.base(store) {
             NodeBase::LevelThree { .. } => panic!(),
             NodeBase::LevelFour { board } => {
                 let mut board_array = [0; 16];
@@ -129,8 +192,27 @@ impl NodeId {
         }
     }
 
+    /// Returns the center subnode of the node.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the node is level 3.
+    ///
+    /// # Diagram
+    ///
+    /// ```txt
+    /// +---+---+---+---+
+    /// |   |   |   |   |
+    /// +---+---+---+---+
+    /// |   | * | * |   |
+    /// +---+---+---+---+
+    /// |   | * | * |   |
+    /// +---+---+---+---+
+    /// |   |   |   |   |
+    /// +---+---+---+---+
+    /// ```
     pub fn center_subnode(&self, store: &mut Store) -> NodeId {
-        match store.get(*self).base {
+        match self.base(store) {
             NodeBase::LevelThree { .. } => panic!(),
             NodeBase::LevelFour { board } => {
                 let mut board_array = [0; 16];
@@ -159,33 +241,141 @@ impl NodeId {
         }
     }
 
+    /// Returns the north subsubnode of the node.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the node is level 3 or level 4.
+    ///
+    /// # Diagram
+    ///
+    /// ```txt
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   | * | * |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   | * | * |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// ```
     pub fn north_subsubnode(&self, store: &mut Store) -> NodeId {
         let w = self.nw(store);
         let e = self.ne(store);
         centered_horiz(store, w, e)
     }
 
+    /// Returns the south subsubnode of the node.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the node is level 3 or level 4.
+    ///
+    /// # Diagram
+    ///
+    /// ```txt
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   | * | * |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   | * | * |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// ```
     pub fn south_subsubnode(&self, store: &mut Store) -> NodeId {
         let w = self.sw(store);
         let e = self.se(store);
         centered_horiz(store, w, e)
     }
 
-    pub fn east_subsubnode(&self, store: &mut Store) -> NodeId {
-        let n = self.ne(store);
-        let s = self.se(store);
-        centered_vert(store, n, s)
-    }
-
+    /// Returns the west subsubnode of the node.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the node is level 3 or level 4.
+    ///
+    /// # Diagram
+    ///
+    /// ```txt
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   | * | * |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   | * | * |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// ```
     pub fn west_subsubnode(&self, store: &mut Store) -> NodeId {
         let n = self.nw(store);
         let s = self.sw(store);
         centered_vert(store, n, s)
     }
+
+    /// Returns the east subsubnode of the node.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the node is level 3 or level 4.
+    ///
+    /// # Diagram
+    ///
+    /// ```txt
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   | * | * |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   | * | * |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// |   |   |   |   |   |   |   |   |
+    /// +---+---+---+---+---+---+---+---+
+    /// ```
+    pub fn east_subsubnode(&self, store: &mut Store) -> NodeId {
+        let n = self.ne(store);
+        let s = self.se(store);
+        centered_vert(store, n, s)
+    }
 }
 
 fn centered_horiz(store: &mut Store, w: NodeId, e: NodeId) -> NodeId {
-    match (store.get(e).base, store.get(w).base) {
+    match (e.base(store), w.base(store)) {
         (NodeBase::LevelFour { board: e_board }, NodeBase::LevelFour { board: w_board }) => {
             let mut e_board_array = [0; 16];
             e_board.write_to_slice_unaligned(&mut e_board_array);
@@ -217,7 +407,7 @@ fn centered_horiz(store: &mut Store, w: NodeId, e: NodeId) -> NodeId {
 }
 
 fn centered_vert(store: &mut Store, n: NodeId, s: NodeId) -> NodeId {
-    match (store.get(n).base, store.get(s).base) {
+    match (n.base(store), s.base(store)) {
         (NodeBase::LevelFour { board: n_board }, NodeBase::LevelFour { board: s_board }) => {
             let mut n_board_array = [0; 16];
             n_board.write_to_slice_unaligned(&mut n_board_array);
@@ -539,62 +729,6 @@ mod tests {
 
     mod level_6 {
         use super::*;
-
-        #[test]
-        fn nw() {
-            let mut store = Store::new();
-            let empty = store.create_empty(5);
-            let filled = filled_square(&mut store, 5);
-            let node = store.create_interior(NodeTemplate {
-                nw: filled,
-                ne: empty,
-                sw: empty,
-                se: empty,
-            });
-            assert_eq!(node.nw(&mut store), filled);
-        }
-
-        #[test]
-        fn ne() {
-            let mut store = Store::new();
-            let empty = store.create_empty(5);
-            let filled = filled_square(&mut store, 5);
-            let node = store.create_interior(NodeTemplate {
-                nw: empty,
-                ne: filled,
-                sw: empty,
-                se: empty,
-            });
-            assert_eq!(node.ne(&mut store), filled);
-        }
-
-        #[test]
-        fn sw() {
-            let mut store = Store::new();
-            let empty = store.create_empty(5);
-            let filled = filled_square(&mut store, 5);
-            let node = store.create_interior(NodeTemplate {
-                nw: empty,
-                ne: empty,
-                sw: filled,
-                se: empty,
-            });
-            assert_eq!(node.sw(&mut store), filled);
-        }
-
-        #[test]
-        fn se() {
-            let mut store = Store::new();
-            let empty = store.create_empty(5);
-            let filled = filled_square(&mut store, 5);
-            let node = store.create_interior(NodeTemplate {
-                nw: empty,
-                ne: empty,
-                sw: empty,
-                se: filled,
-            });
-            assert_eq!(node.se(&mut store), filled);
-        }
 
         #[test]
         fn center_subnode() {

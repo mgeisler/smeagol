@@ -1,5 +1,5 @@
 pub mod node;
-use self::node::{NodeId, Store};
+use self::node::{Quadrant, NodeId, Store};
 
 const INITIAL_LEVEL: u8 = 5;
 
@@ -74,13 +74,6 @@ impl Position {
             (false, false) => Quadrant::Southeast,
         }
     }
-}
-
-pub enum Quadrant {
-    Northeast,
-    Northwest,
-    Southeast,
-    Southwest,
 }
 
 /// Conway's Game of Life.
@@ -195,6 +188,10 @@ impl Life {
     /// ```
     pub fn get_alive_cells(&self) -> Vec<Position> {
         self.root.get_alive_cells(&self.store)
+    }
+
+    pub fn contains_alive_cells(&self, upper_left: Position, lower_right: Position) -> bool {
+        self.root.contains_alive_cells(&self.store, upper_left, lower_right)
     }
 
     /// Returns the current generation.

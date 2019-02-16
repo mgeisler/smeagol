@@ -118,7 +118,7 @@ impl NodeId {
             return jump;
         }
 
-        let jump = match store.get(*self).base {
+        let jump = match self.base(store) {
             NodeBase::LevelThree { .. } => panic!(),
             NodeBase::LevelFour { mut board } => {
                 // step four times
@@ -208,7 +208,7 @@ impl NodeId {
         }
         let step_log_2 = store.step_log_2();
 
-        let step = match store.get(*self).base {
+        let step = match self.base(store) {
             NodeBase::LevelThree { .. } => panic!(),
 
             NodeBase::LevelFour { mut board } => {
