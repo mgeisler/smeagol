@@ -84,6 +84,12 @@ pub struct Life {
     generation: u128,
 }
 
+impl Default for Life {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Life {
     /// Creates a empty Game of Life.
     ///
@@ -214,7 +220,7 @@ impl Life {
         let alive_cells = rle
             .alive_cells()
             .into_iter()
-            .map(|(x, y)| Position::new(x as i64, y as i64))
+            .map(|(x, y)| Position::new(i64::from(x), i64::from(y)))
             .collect::<Vec<_>>();
 
         let mut store = Store::new();
@@ -298,34 +304,34 @@ impl Life {
     fn pad(&mut self) {
         while self.root.level(&self.store) < 6
             || self.store.step_log_2() > self.root.level(&self.store) - 2
-            || self.root.ne(&mut self.store).population(&mut self.store)
+            || self.root.ne(&mut self.store).population(&self.store)
                 != self
                     .root
                     .ne(&mut self.store)
                     .sw(&mut self.store)
                     .sw(&mut self.store)
-                    .population(&mut self.store)
-            || self.root.nw(&mut self.store).population(&mut self.store)
+                    .population(&self.store)
+            || self.root.nw(&mut self.store).population(&self.store)
                 != self
                     .root
                     .nw(&mut self.store)
                     .se(&mut self.store)
                     .se(&mut self.store)
-                    .population(&mut self.store)
-            || self.root.se(&mut self.store).population(&mut self.store)
+                    .population(&self.store)
+            || self.root.se(&mut self.store).population(&self.store)
                 != self
                     .root
                     .se(&mut self.store)
                     .nw(&mut self.store)
                     .nw(&mut self.store)
-                    .population(&mut self.store)
-            || self.root.sw(&mut self.store).population(&mut self.store)
+                    .population(&self.store)
+            || self.root.sw(&mut self.store).population(&self.store)
                 != self
                     .root
                     .sw(&mut self.store)
                     .ne(&mut self.store)
                     .ne(&mut self.store)
-                    .population(&mut self.store)
+                    .population(&self.store)
         {
             self.root = self.root.expand(&mut self.store);
         }

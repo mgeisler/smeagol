@@ -38,7 +38,7 @@ impl Store {
         let node = Node {
             base: NodeBase::LevelThree { board },
             level: 3,
-            population: board.count_ones().wrapping_sum() as u128,
+            population: u128::from(board.count_ones().wrapping_sum()),
         };
         self.add_node(node)
     }
@@ -62,7 +62,7 @@ impl Store {
         let node = Node {
             base: NodeBase::LevelFour { board },
             level: 4,
-            population: board.count_ones().wrapping_sum() as u128,
+            population: u128::from(board.count_ones().wrapping_sum()),
         };
         self.add_node(node)
     }

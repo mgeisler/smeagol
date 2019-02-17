@@ -9,7 +9,7 @@ const MIN_LVL4_COORD: i64 = -8;
 const MAX_LVL4_COORD: i64 = 7;
 
 impl NodeId {
-    pub fn get_cell(&self, store: &Store, pos: Position) -> Cell {
+    pub fn get_cell(self, store: &Store, pos: Position) -> Cell {
         match self.base(store) {
             NodeBase::LevelThree { board } => {
                 let x_offset = (3 - pos.x) as usize;
@@ -35,7 +35,7 @@ impl NodeId {
         }
     }
 
-    pub fn set_cell_alive(&self, store: &mut Store, pos: Position) -> NodeId {
+    pub fn set_cell_alive(self, store: &mut Store, pos: Position) -> NodeId {
         match self.base(store) {
             NodeBase::LevelThree { board } => {
                 let x_offset = (3 - pos.x) as usize;
@@ -75,7 +75,7 @@ impl NodeId {
         }
     }
 
-    pub fn get_alive_cells(&self, store: &Store) -> Vec<Position> {
+    pub fn get_alive_cells(self, store: &Store) -> Vec<Position> {
         match self.base(store) {
             NodeBase::LevelThree { .. } => {
                 let mut alive_coords = Vec::with_capacity(64);
@@ -137,7 +137,7 @@ impl NodeId {
     }
 
     pub fn set_cells_alive(
-        &self,
+        self,
         store: &mut Store,
         coords: impl IntoIterator<Item = Position>,
     ) -> NodeId {
@@ -145,14 +145,14 @@ impl NodeId {
     }
 
     fn set_cells_alive_recursive(
-        &self,
+        self,
         store: &mut Store,
         coords: &mut [Position],
         offset_x: i64,
         offset_y: i64,
     ) -> NodeId {
         if coords.is_empty() {
-            return *self;
+            return self;
         }
 
         match self.base(store) {
@@ -216,7 +216,7 @@ impl NodeId {
     }
 
     pub fn contains_alive_cells(
-        &self,
+        self,
         store: &Store,
         upper_left: Position,
         lower_right: Position,

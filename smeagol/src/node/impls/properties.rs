@@ -1,8 +1,8 @@
 use crate::node::{NodeBase, NodeId, Store};
 
 impl NodeId {
-    pub fn base(&self, store: &Store) -> NodeBase {
-        store.get(*self).base
+    pub fn base(self, store: &Store) -> NodeBase {
+        store.get(self).base
     }
 
     /// Returns the level of the node.
@@ -14,8 +14,8 @@ impl NodeId {
     /// let empty = store.create_empty(7);
     /// assert_eq!(empty.level(&store), 7);
     /// ```
-    pub fn level(&self, store: &Store) -> u8 {
-        store.get(*self).level
+    pub fn level(self, store: &Store) -> u8 {
+        store.get(self).level
     }
 
     /// Returns the number of alive cells in the node.
@@ -31,8 +31,8 @@ impl NodeId {
     /// let one_alive = empty.set_cell_alive(&mut store, smeagol::Position::new(0, 0));
     /// assert_eq!(one_alive.population(&store), 1);
     /// ```
-    pub fn population(&self, store: &Store) -> u128 {
-        store.get(*self).population
+    pub fn population(self, store: &Store) -> u128 {
+        store.get(self).population
     }
 
     /// Returns the minimum coordinate that can be used with the node.
@@ -64,7 +64,7 @@ impl NodeId {
     /// // half of the node's cells are alive
     /// assert_eq!(stripes.population(&store), 32 * 32 / 2);
     /// ```
-    pub fn min_coord(&self, store: &Store) -> i64 {
+    pub fn min_coord(self, store: &Store) -> i64 {
         let level = self.level(store);
         if level == 64 {
             i64::min_value()
@@ -102,7 +102,7 @@ impl NodeId {
     /// // half of the node's cells are alive
     /// assert_eq!(stripes.population(&store), 32 * 32 / 2);
     /// ```
-    pub fn max_coord(&self, store: &Store) -> i64 {
+    pub fn max_coord(self, store: &Store) -> i64 {
         let level = self.level(store);
         if level == 64 {
             i64::max_value()

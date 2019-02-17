@@ -5,7 +5,7 @@ impl NodeId {
     /// # Panics
     ///
     /// Panics if the node is level 3 or level 4.
-    pub fn expand(&self, store: &mut Store) -> NodeId {
+    pub fn expand(self, store: &mut Store) -> NodeId {
         match self.base(store) {
             NodeBase::LevelThree { .. } | NodeBase::LevelFour { .. } => panic!(),
             NodeBase::Interior { nw, ne, sw, se } => {
@@ -59,7 +59,7 @@ impl NodeId {
     /// |   |   |
     /// +---+---+
     /// ```
-    pub fn nw(&self, store: &mut Store) -> NodeId {
+    pub fn nw(self, store: &mut Store) -> NodeId {
         match self.base(store) {
             NodeBase::LevelThree { .. } => panic!(),
             NodeBase::LevelFour { board } => {
@@ -96,7 +96,7 @@ impl NodeId {
     /// |   |   |
     /// +---+---+
     /// ```
-    pub fn ne(&self, store: &mut Store) -> NodeId {
+    pub fn ne(self, store: &mut Store) -> NodeId {
         match self.base(store) {
             NodeBase::LevelThree { .. } => panic!(),
             NodeBase::LevelFour { board } => {
@@ -133,7 +133,7 @@ impl NodeId {
     /// | * |   |
     /// +---+---+
     /// ```
-    pub fn sw(&self, store: &mut Store) -> NodeId {
+    pub fn sw(self, store: &mut Store) -> NodeId {
         match self.base(store) {
             NodeBase::LevelThree { .. } => panic!(),
             NodeBase::LevelFour { board } => {
@@ -170,7 +170,7 @@ impl NodeId {
     /// |   | * |
     /// +---+---+
     /// ```
-    pub fn se(&self, store: &mut Store) -> NodeId {
+    pub fn se(self, store: &mut Store) -> NodeId {
         match self.base(store) {
             NodeBase::LevelThree { .. } => panic!(),
             NodeBase::LevelFour { board } => {
@@ -211,7 +211,7 @@ impl NodeId {
     /// |   |   |   |   |
     /// +---+---+---+---+
     /// ```
-    pub fn center_subnode(&self, store: &mut Store) -> NodeId {
+    pub fn center_subnode(self, store: &mut Store) -> NodeId {
         match self.base(store) {
             NodeBase::LevelThree { .. } => panic!(),
             NodeBase::LevelFour { board } => {
@@ -268,7 +268,7 @@ impl NodeId {
     /// |   |   |   |   |   |   |   |   |
     /// +---+---+---+---+---+---+---+---+
     /// ```
-    pub fn north_subsubnode(&self, store: &mut Store) -> NodeId {
+    pub fn north_subsubnode(self, store: &mut Store) -> NodeId {
         let w = self.nw(store);
         let e = self.ne(store);
         centered_horiz(store, w, e)
@@ -301,7 +301,7 @@ impl NodeId {
     /// |   |   |   |   |   |   |   |   |
     /// +---+---+---+---+---+---+---+---+
     /// ```
-    pub fn south_subsubnode(&self, store: &mut Store) -> NodeId {
+    pub fn south_subsubnode(self, store: &mut Store) -> NodeId {
         let w = self.sw(store);
         let e = self.se(store);
         centered_horiz(store, w, e)
@@ -334,7 +334,7 @@ impl NodeId {
     /// |   |   |   |   |   |   |   |   |
     /// +---+---+---+---+---+---+---+---+
     /// ```
-    pub fn west_subsubnode(&self, store: &mut Store) -> NodeId {
+    pub fn west_subsubnode(self, store: &mut Store) -> NodeId {
         let n = self.nw(store);
         let s = self.sw(store);
         centered_vert(store, n, s)
@@ -367,7 +367,7 @@ impl NodeId {
     /// |   |   |   |   |   |   |   |   |
     /// +---+---+---+---+---+---+---+---+
     /// ```
-    pub fn east_subsubnode(&self, store: &mut Store) -> NodeId {
+    pub fn east_subsubnode(self, store: &mut Store) -> NodeId {
         let n = self.ne(store);
         let s = self.se(store);
         centered_vert(store, n, s)

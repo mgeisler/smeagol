@@ -113,8 +113,9 @@ fn step_u16x16(board: &u16x16) -> u16x16 {
 }
 
 impl NodeId {
-    pub fn jump(&self, store: &mut Store) -> NodeId {
-        if let Some(jump) = store.get_jump(*self) {
+    #[allow(clippy::many_single_char_names)]
+    pub fn jump(self, store: &mut Store) -> NodeId {
+        if let Some(jump) = store.get_jump(self) {
             return jump;
         }
 
@@ -198,12 +199,13 @@ impl NodeId {
             }
         };
 
-        store.add_jump(*self, jump);
+        store.add_jump(self, jump);
         jump
     }
 
-    pub fn step(&self, store: &mut Store) -> NodeId {
-        if let Some(step) = store.get_step(*self) {
+    #[allow(clippy::many_single_char_names)]
+    pub fn step(self, store: &mut Store) -> NodeId {
+        if let Some(step) = store.get_step(self) {
             return step;
         }
 
@@ -301,7 +303,7 @@ impl NodeId {
             }
         };
 
-        store.add_step(*self, step);
+        store.add_step(self, step);
         step
     }
 }

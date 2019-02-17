@@ -10,7 +10,7 @@ pub struct NodeTemplate {
     pub se: NodeId,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Store {
     ids: hashbrown::HashMap<NodeBase, NodeId>,
     nodes: Vec<Node>,
