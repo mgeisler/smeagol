@@ -1,5 +1,5 @@
 pub mod node;
-use self::node::{Quadrant, NodeId, Store};
+use self::node::{NodeId, NodeTemplate, Quadrant, Store};
 
 const INITIAL_LEVEL: u8 = 5;
 
@@ -117,8 +117,62 @@ impl Life {
     where
         P: AsRef<std::path::Path>,
     {
+        let mut store = Store::new();
         let mc = smeagol_mc::Macrocell::from_file(path)?;
-        unimplemented!()
+        let mut nodes = vec![];
+        for cell in mc.cells {
+            match cell {
+                smeagol_mc::Cell::LevelThree { cells } => {
+                    let mut x = -4;
+                    let mut y = -4;
+                    let mut positions = vec![];
+                    for cell in cells {
+                        match cell {
+                            '$' => {
+                                y += 1;
+                                x = -4;
+                            }
+                            '.' => x += 1,
+                            '*' => {
+                                positions.push(Position { x, y });
+                                x += 1;
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+                    nodes.push(store.create_empty(3).set_cells_alive(&mut store, positions));
+                }
+                smeagol_mc::Cell::Interior { children, level } => {
+                    let nw = if children[0] == 0 {
+                        store.create_empty(level - 1)
+                    } else {
+                        nodes[children[0] - 1]
+                    };
+                    let ne = if children[1] == 0 {
+                        store.create_empty(level - 1)
+                    } else {
+                        nodes[children[1] - 1]
+                    };
+                    let sw = if children[2] == 0 {
+                        store.create_empty(level - 1)
+                    } else {
+                        nodes[children[2] - 1]
+                    };
+                    let se = if children[3] == 0 {
+                        store.create_empty(level - 1)
+                    } else {
+                        nodes[children[3] - 1]
+                    };
+                    nodes.push(store.create_interior(NodeTemplate { nw, ne, sw, se }));
+                }
+            }
+        }
+        let root = nodes.last().cloned().unwrap();
+        Ok(Self {
+            root,
+            store,
+            generation: 0,
+        })
     }
 
     /// Creates a Game of Life from the given RLE file.
@@ -210,7 +264,8 @@ impl Life {
     }
 
     pub fn contains_alive_cells(&self, upper_left: Position, lower_right: Position) -> bool {
-        self.root.contains_alive_cells(&self.store, upper_left, lower_right)
+        self.root
+            .contains_alive_cells(&self.store, upper_left, lower_right)
     }
 
     /// Returns the current generation.

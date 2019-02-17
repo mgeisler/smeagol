@@ -400,7 +400,11 @@ mod tests {
                 assert_eq!(one_alive.get_alive_cells(&store), vec![pos]);
                 assert_eq!(one_alive.population(&store), 1);
                 assert!(one_alive.contains_alive_cells(&store, pos, pos));
-                assert!(one_alive.contains_alive_cells(&store, Position::new(min, min), Position::new(max, max)));
+                assert!(one_alive.contains_alive_cells(
+                    &store,
+                    Position::new(min, min),
+                    Position::new(max, max)
+                ));
             }
         }
     }

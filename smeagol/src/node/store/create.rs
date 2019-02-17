@@ -1,4 +1,4 @@
-use crate::node::{MAX_LEVEL, Index, Node, NodeBase, NodeId, NodeTemplate, Store};
+use crate::node::{Index, Node, NodeBase, NodeId, NodeTemplate, Store, MAX_LEVEL};
 use packed_simd::{u16x16, u8x8};
 
 /// Methods to create new nodes.
@@ -146,7 +146,7 @@ impl Store {
                     population: template.nw.population(self)
                         + template.ne.population(self)
                         + template.sw.population(self)
-                        + template.se.population(self)
+                        + template.se.population(self),
                 };
                 self.add_node(node)
             }
@@ -158,7 +158,7 @@ impl Store {
     /// # Panics
     ///
     /// Panics if the level is less than 3.
-    /// 
+    ///
     /// # Examples
     ///
     /// ```

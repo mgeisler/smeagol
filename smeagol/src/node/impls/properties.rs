@@ -1,4 +1,4 @@
-use crate::node::{NodeId, Store, NodeBase};
+use crate::node::{NodeBase, NodeId, Store};
 
 impl NodeId {
     pub fn base(&self, store: &Store) -> NodeBase {
