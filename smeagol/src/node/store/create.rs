@@ -71,7 +71,8 @@ impl Store {
     ///
     /// # Panics
     ///
-    /// Panics if the new node has a level greater than 64, the maximum level a node can have.
+    /// Panics if the children nodes have different levels or the new node has a level greater than
+    /// 64, the maximum level a node can have.
     pub fn create_interior(&mut self, template: NodeTemplate) -> NodeId {
         let level = template.ne.level(self);
         assert_eq!(template.ne.level(self), level);

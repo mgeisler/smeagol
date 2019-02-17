@@ -113,6 +113,25 @@ impl Life {
     /// # Ok(())
     /// # }
     /// ```
+    pub fn from_macrocell_file<P>(path: P) -> Result<Self, std::io::Error>
+    where
+        P: AsRef<std::path::Path>,
+    {
+        let mc = smeagol_mc::Macrocell::from_file(path)?;
+        unimplemented!()
+    }
+
+    /// Creates a Game of Life from the given RLE file.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> Result<(), smeagol_rle::RleError> {
+    /// // pulsar
+    /// let mut life = smeagol::Life::from_rle_file("./assets/pulsar.rle")?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn from_rle_file<P>(path: P) -> Result<Self, smeagol_rle::RleError>
     where
         P: AsRef<std::path::Path>,

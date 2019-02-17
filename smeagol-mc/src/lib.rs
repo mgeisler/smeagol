@@ -24,12 +24,6 @@ named!(header<&[u8], ()>,
     )
 );
 
-#[derive(Debug)]
-pub enum Cell {
-    LevelThree { cells: Vec<char> },
-    Interior { level: u8, children: [usize; 4] },
-}
-
 named!(level_3<&[u8], Cell>,
     do_parse!(
         cells: many0!(one_of!(".*$")) >>
@@ -72,6 +66,12 @@ fn macrocell(input: &[u8]) -> nom::IResult<&[u8], Vec<Cell>> {
         }
     }
     Ok((rest, cells))
+}
+
+#[derive(Debug)]
+pub enum Cell {
+    LevelThree { cells: Vec<char> },
+    Interior { level: u8, children: [usize; 4] },
 }
 
 pub struct Macrocell {
