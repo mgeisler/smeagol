@@ -206,6 +206,7 @@ impl NodeId {
         if let Some(step) = store.get_step(*self) {
             return step;
         }
+
         let step_log_2 = store.step_log_2();
 
         let step = match self.base(store) {
