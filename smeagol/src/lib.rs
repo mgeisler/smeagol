@@ -55,6 +55,7 @@ pub struct Position {
 }
 
 impl Position {
+    /// Creates a new position with the given coordinates.
     pub fn new(x: i64, y: i64) -> Self {
         Self { x, y }
     }
@@ -84,12 +85,6 @@ pub struct Life {
     generation: u128,
 }
 
-impl Default for Life {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Life {
     /// Creates a empty Game of Life.
     ///
@@ -108,14 +103,14 @@ impl Life {
         }
     }
 
-    /// Creates a Game of Life from the given RLE file.
+    /// Creates a Game of Life from the given Macrocell file.
     ///
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), smeagol_rle::RleError> {
+    /// # fn main() -> Result<(), std::io::Error> {
     /// // pulsar
-    /// let mut life = smeagol::Life::from_rle_file("./assets/pulsar.rle")?;
+    /// let mut life = smeagol::Life::from_macrocell_file("../assets/waterbear.mc")?;
     /// # Ok(())
     /// # }
     /// ```
@@ -188,7 +183,7 @@ impl Life {
     /// ```
     /// # fn main() -> Result<(), smeagol_rle::RleError> {
     /// // pulsar
-    /// let mut life = smeagol::Life::from_rle_file("./assets/pulsar.rle")?;
+    /// let mut life = smeagol::Life::from_rle_file("../assets/pulsar.rle")?;
     /// # Ok(())
     /// # }
     /// ```
@@ -360,5 +355,11 @@ impl Life {
         self.pad();
         self.root = self.root.step(&mut self.store);
         self.generation += u128::from(self.step_size());
+    }
+}
+
+impl Default for Life {
+    fn default() -> Self {
+        Self::new()
     }
 }
