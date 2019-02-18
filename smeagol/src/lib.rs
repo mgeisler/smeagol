@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate packed_simd;
+
 pub mod node;
 use self::node::{NodeId, NodeTemplate, Quadrant, Store};
 

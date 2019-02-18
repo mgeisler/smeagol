@@ -32,49 +32,11 @@ impl Counts {
 }
 
 fn rotate_lanes_up(board: &u16x16) -> u16x16 {
-    let mut board_array = [0; 16];
-    board.write_to_slice_unaligned(&mut board_array);
-    u16x16::new(
-        board_array[1],
-        board_array[2],
-        board_array[3],
-        board_array[4],
-        board_array[5],
-        board_array[6],
-        board_array[7],
-        board_array[8],
-        board_array[9],
-        board_array[10],
-        board_array[11],
-        board_array[12],
-        board_array[13],
-        board_array[14],
-        board_array[15],
-        0,
-    )
+    packed_simd::shuffle!(board, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0])
 }
 
 fn rotate_lanes_down(board: &u16x16) -> u16x16 {
-    let mut board_array = [0; 16];
-    board.write_to_slice_unaligned(&mut board_array);
-    u16x16::new(
-        0,
-        board_array[0],
-        board_array[1],
-        board_array[2],
-        board_array[3],
-        board_array[4],
-        board_array[5],
-        board_array[6],
-        board_array[7],
-        board_array[8],
-        board_array[9],
-        board_array[10],
-        board_array[11],
-        board_array[12],
-        board_array[13],
-        board_array[14],
-    )
+    packed_simd::shuffle!(board, [15, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
 }
 
 fn step_u16x16(board: &u16x16) -> u16x16 {
