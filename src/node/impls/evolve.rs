@@ -310,6 +310,9 @@ fn step_level_5(
     store.create_leaf(combine_results_u16x16(w, x, y, z))
 }
 
+const LEFT_MASK: u16x32 = u16x32::splat(0b1111_1111_0000_0000);
+const RIGHT_MASK: u16x32 = u16x32::splat(0b0000_0000_1111_1111);
+
 #[allow(clippy::many_single_char_names)]
 fn jump_level_5(store: &mut Store, nw: NodeId, ne: NodeId, sw: NodeId, se: NodeId) -> NodeId {
     let nw_grid = store.node(nw).unwrap_leaf();
@@ -358,9 +361,6 @@ fn jump_level_5(store: &mut Store, nw: NodeId, ne: NodeId, sw: NodeId, se: NodeI
     let left = jump_u16x32(left);
     let right = jump_u16x32(right);
     let middle = jump_u16x32(middle);
-
-    let LEFT_MASK = u16x32::splat(0b1111_1111_0000_0000);
-    let RIGHT_MASK = u16x32::splat(0b0000_0000_1111_1111);
 
     let wy = ((left << 4) & LEFT_MASK) | ((middle >> 4) & RIGHT_MASK);
     let wy = jump_u16x32(wy);
