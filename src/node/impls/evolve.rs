@@ -320,24 +320,6 @@ fn jump_level_5(store: &mut Store, nw: NodeId, ne: NodeId, sw: NodeId, se: NodeI
     let sw_grid = store.node(sw).unwrap_leaf();
     let se_grid = store.node(se).unwrap_leaf();
 
-    // +---+---+---+---+---+---+---+---+
-    // |   |   |   |   |   |   |   |   |
-    // +---+---+---+---+---+---+---+---+
-    // |   | A | A | B | B | C | C |   |
-    // +---+---+---+---+---+---+---+---+
-    // |   | A | A | B | B | C | C |   |
-    // +---+---+---+---+---+---+---+---+
-    // |   | D | D | E | E | F | F |   |
-    // +---+---+---+---+---+---+---+---+
-    // |   | D | D | E | E | F | F |   |
-    // +---+---+---+---+---+---+---+---+
-    // |   | G | G | H | H | I | I |   |
-    // +---+---+---+---+---+---+---+---+
-    // |   | G | G | H | H | I | I |   |
-    // +---+---+---+---+---+---+---+---+
-    // |   |   |   |   |   |   |   |   |
-    // +---+---+---+---+---+---+---+---+
-
     let left = shuffle!(
         nw_grid,
         sw_grid,
@@ -386,12 +368,10 @@ fn jump_level_5(store: &mut Store, nw: NodeId, ne: NodeId, sw: NodeId, se: NodeI
     // |   |   |   |   |   |   |   |   |
     // +---+---+---+---+---+---+---+---+
 
-    let w = shuffle!(wy, [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
-    let y = shuffle!(wy, [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]);
-    let x = shuffle!(xz, [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
-    let z = shuffle!(xz, [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]);
+    let result = ((wy << 4) & LEFT_MASK) | ((xz >> 4) & RIGHT_MASK);
+    let result = shuffle!(result, [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]);
 
-    store.create_leaf(combine_results_u16x16(w, x, y, z))
+    store.create_leaf(result)
 }
 
 fn horiz_jump(store: &mut Store, w: NodeId, e: NodeId) -> NodeId {
