@@ -5,16 +5,16 @@
  */
 
 use crate::node::*;
-use packed_simd::u16x16;
+use packed_simd::{u16x16, u16x32};
 
 #[derive(Clone, Copy, Debug)]
-struct Counts {
+struct CountsU16x16 {
     low: u16x16,
     mid: u16x16,
     high: u16x16,
 }
 
-impl Counts {
+impl CountsU16x16 {
     fn new() -> Self {
         Self {
             low: u16x16::splat(0),
@@ -37,14 +37,14 @@ impl Counts {
     }
 }
 
-fn rotate_lanes_up(board: u16x16) -> u16x16 {
+fn rotate_lanes_up_u16x16(board: u16x16) -> u16x16 {
     shuffle!(
         board,
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0]
     )
 }
 
-fn rotate_lanes_down(board: u16x16) -> u16x16 {
+fn rotate_lanes_down_u16x16(board: u16x16) -> u16x16 {
     shuffle!(
         board,
         [15, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
@@ -52,7 +52,7 @@ fn rotate_lanes_down(board: u16x16) -> u16x16 {
 }
 
 fn step_once_u16x16(board: u16x16) -> u16x16 {
-    let mut neighbors = Counts::new();
+    let mut neighbors = CountsU16x16::new();
 
     // +---+---+---+
     // | * | * | * |
@@ -63,18 +63,18 @@ fn step_once_u16x16(board: u16x16) -> u16x16 {
     // +---+---+---+
 
     // top row
-    neighbors.add(rotate_lanes_down(board) >> 1);
-    neighbors.add(rotate_lanes_down(board));
-    neighbors.add(rotate_lanes_down(board) << 1);
+    neighbors.add(rotate_lanes_down_u16x16(board) >> 1);
+    neighbors.add(rotate_lanes_down_u16x16(board));
+    neighbors.add(rotate_lanes_down_u16x16(board) << 1);
 
     // middle row
     neighbors.add(board >> 1);
     neighbors.add(board << 1);
 
     // bottom row
-    neighbors.add(rotate_lanes_up(board) >> 1);
-    neighbors.add(rotate_lanes_up(board));
-    neighbors.add(rotate_lanes_up(board) << 1);
+    neighbors.add(rotate_lanes_up_u16x16(board) >> 1);
+    neighbors.add(rotate_lanes_up_u16x16(board));
+    neighbors.add(rotate_lanes_up_u16x16(board) << 1);
 
     // 2 is 010 in binary
     let two_neighbors = !neighbors.high & neighbors.mid & !neighbors.low;
@@ -170,6 +170,106 @@ fn vert_u16x16(n: u16x16, s: u16x16) -> u16x16 {
     n | s
 }
 
+#[derive(Clone, Copy, Debug)]
+struct CountsU16x32 {
+    low: u16x32,
+    mid: u16x32,
+    high: u16x32,
+}
+
+impl CountsU16x32 {
+    fn new() -> Self {
+        Self {
+            low: u16x32::splat(0),
+            mid: u16x32::splat(0),
+            high: u16x32::splat(0),
+        }
+    }
+
+    fn add(&mut self, neighbors: u16x32) {
+        // low bit half adder
+        let low_carry = self.low & neighbors;
+        self.low ^= neighbors;
+
+        // middle bit half adder
+        let mid_carry = self.mid & low_carry;
+        self.mid ^= low_carry;
+
+        // high bit saturating add
+        self.high |= mid_carry;
+    }
+}
+
+fn rotate_lanes_up_u16x32(board: u16x32) -> u16x32 {
+    shuffle!(
+        board,
+        [
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+            25, 26, 27, 28, 29, 30, 31, 0
+        ]
+    )
+}
+
+fn rotate_lanes_down_u16x32(board: u16x32) -> u16x32 {
+    shuffle!(
+        board,
+        [
+            31, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+            23, 24, 25, 26, 27, 28, 29, 30
+        ]
+    )
+}
+
+fn step_once_u16x32(board: u16x32) -> u16x32 {
+    let mut neighbors = CountsU16x32::new();
+
+    // +---+---+---+
+    // | * | * | * |
+    // +---+---+---+
+    // | * |   | * |
+    // +---+---+---+
+    // | * | * | * |
+    // +---+---+---+
+
+    // top row
+    neighbors.add(rotate_lanes_down_u16x32(board) >> 1);
+    neighbors.add(rotate_lanes_down_u16x32(board));
+    neighbors.add(rotate_lanes_down_u16x32(board) << 1);
+
+    // middle row
+    neighbors.add(board >> 1);
+    neighbors.add(board << 1);
+
+    // bottom row
+    neighbors.add(rotate_lanes_up_u16x32(board) >> 1);
+    neighbors.add(rotate_lanes_up_u16x32(board));
+    neighbors.add(rotate_lanes_up_u16x32(board) << 1);
+
+    // 2 is 010 in binary
+    let two_neighbors = !neighbors.high & neighbors.mid & !neighbors.low;
+    // 3 is 011 in binary
+    let three_neighbors = !neighbors.high & neighbors.mid & neighbors.low;
+
+    // if 2 neighbors, the cell doesn't change
+    // if 3 neighbors, the cell is alive
+    (two_neighbors & board) | three_neighbors
+}
+
+fn jump_u16x32(mut board: u16x32) -> u16x32 {
+    board = step_once_u16x32(board);
+    board = step_once_u16x32(board);
+    board = step_once_u16x32(board);
+    board = step_once_u16x32(board);
+    board
+}
+
+fn step_u16x32(mut board: u16x32, step_log_2: u8) -> u16x32 {
+    for _ in 0..(1 << step_log_2) {
+        board = step_once_u16x32(board);
+    }
+    board
+}
+
 #[allow(clippy::many_single_char_names)]
 fn step_level_5(
     store: &mut Store,
@@ -263,15 +363,43 @@ fn jump_level_5(store: &mut Store, nw: NodeId, ne: NodeId, sw: NodeId, se: NodeI
     // |   |   |   |   |   |   |   |   |
     // +---+---+---+---+---+---+---+---+
 
-    let a = jump_u16x16(nw_grid);
+    let left = shuffle!(
+        nw_grid,
+        sw_grid,
+        [
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            24, 25, 26, 27, 28, 29, 30, 31
+        ]
+    );
+    let left = jump_u16x32(left);
+
+    let right = shuffle!(
+        ne_grid,
+        se_grid,
+        [
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            24, 25, 26, 27, 28, 29, 30, 31
+        ]
+    );
+    let right = jump_u16x32(right);
+
+    let a = shuffle!(left, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+    let d = shuffle!(left, [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]);
+    let g = shuffle!(left, [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]);
+
+    let c = shuffle!(right, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+    let f = shuffle!(right, [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]);
+    let i = shuffle!(right, [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]);
+
+    // let a = jump_u16x16(nw_grid);
     let b = horiz_jump_u16x16(nw_grid, ne_grid);
-    let c = jump_u16x16(ne_grid);
-    let d = vert_jump_u16x16(nw_grid, sw_grid);;
+    // let c = jump_u16x16(ne_grid);
+    // let d = vert_jump_u16x16(nw_grid, sw_grid);;
     let e = center_jump_u16x16(nw_grid, ne_grid, sw_grid, se_grid);
-    let f = vert_jump_u16x16(ne_grid, se_grid);;
-    let g = jump_u16x16(sw_grid);
+    // let f = vert_jump_u16x16(ne_grid, se_grid);;
+    // let g = jump_u16x16(sw_grid);
     let h = horiz_jump_u16x16(sw_grid, se_grid);
-    let i = jump_u16x16(se_grid);
+    // let i = jump_u16x16(se_grid);
 
     // +---+---+---+---+---+---+---+---+
     // |   |   |   |   |   |   |   |   |
