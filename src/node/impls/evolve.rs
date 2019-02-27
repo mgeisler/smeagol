@@ -101,30 +101,6 @@ fn step_u16x16(mut board: u16x16, step_log_2: u8) -> u16x16 {
     board
 }
 
-fn horiz_jump_u16x16(w: u16x16, e: u16x16) -> u16x16 {
-    let grid = (w << 8) | (e >> 8);
-    jump_u16x16(grid)
-}
-
-fn vert_jump_u16x16(n: u16x16, s: u16x16) -> u16x16 {
-    let n = shuffle!(n, [8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7])
-        & LEVEL_4_UPPER_HALF_MASK;
-    let s = shuffle!(s, [8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7])
-        & LEVEL_4_LOWER_HALF_MASK;
-    let grid = n | s;
-    jump_u16x16(grid)
-}
-
-fn center_jump_u16x16(
-    nw_grid: u16x16,
-    ne_grid: u16x16,
-    sw_grid: u16x16,
-    se_grid: u16x16,
-) -> u16x16 {
-    let grid = center(nw_grid, ne_grid, sw_grid, se_grid);
-    jump_u16x16(grid)
-}
-
 fn combine_results_u16x16(
     nw_grid: u16x16,
     ne_grid: u16x16,
@@ -163,11 +139,7 @@ fn horiz_u16x16(w: u16x16, e: u16x16) -> u16x16 {
 }
 
 fn vert_u16x16(n: u16x16, s: u16x16) -> u16x16 {
-    let n = shuffle!(n, [8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7])
-        & LEVEL_4_UPPER_HALF_MASK;
-    let s = shuffle!(s, [8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7])
-        & LEVEL_4_LOWER_HALF_MASK;
-    n | s
+    shuffle!(n, s, [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23])
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -371,7 +343,6 @@ fn jump_level_5(store: &mut Store, nw: NodeId, ne: NodeId, sw: NodeId, se: NodeI
             24, 25, 26, 27, 28, 29, 30, 31
         ]
     );
-    let left = jump_u16x32(left);
 
     let right = shuffle!(
         ne_grid,
@@ -381,7 +352,12 @@ fn jump_level_5(store: &mut Store, nw: NodeId, ne: NodeId, sw: NodeId, se: NodeI
             24, 25, 26, 27, 28, 29, 30, 31
         ]
     );
+
+    let middle = (left << 8) | (right >> 8);
+
+    let left = jump_u16x32(left);
     let right = jump_u16x32(right);
+    let middle = jump_u16x32(middle);
 
     let a = shuffle!(left, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
     let d = shuffle!(left, [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]);
@@ -391,14 +367,10 @@ fn jump_level_5(store: &mut Store, nw: NodeId, ne: NodeId, sw: NodeId, se: NodeI
     let f = shuffle!(right, [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]);
     let i = shuffle!(right, [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]);
 
-    // let a = jump_u16x16(nw_grid);
-    let b = horiz_jump_u16x16(nw_grid, ne_grid);
-    // let c = jump_u16x16(ne_grid);
-    // let d = vert_jump_u16x16(nw_grid, sw_grid);;
-    let e = center_jump_u16x16(nw_grid, ne_grid, sw_grid, se_grid);
-    // let f = vert_jump_u16x16(ne_grid, se_grid);;
-    // let g = jump_u16x16(sw_grid);
-    let h = horiz_jump_u16x16(sw_grid, se_grid);
+    let b = shuffle!(middle, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+    let e = shuffle!(middle, [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]);
+    let h = shuffle!(middle, [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]);
+
     // let i = jump_u16x16(se_grid);
 
     // +---+---+---+---+---+---+---+---+
