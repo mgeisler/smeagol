@@ -1,11 +1,118 @@
-/*
- * This Source Code Form is subject to the terms of the Mozilla Public License,
- * v. 2.0. If a copy of the MPL was not distributed with this file, You can
- * obtain one at http://mozilla.org/MPL/2.0/.
- */
+use crate::*;
 
-use crate::node::*;
-use packed_simd::u16x16;
+const LEVEL_4_UPPER_HALF_MASK: u16x16 = u16x16::new(
+    0b1111_1111_1111_1111,
+    0b1111_1111_1111_1111,
+    0b1111_1111_1111_1111,
+    0b1111_1111_1111_1111,
+    0b1111_1111_1111_1111,
+    0b1111_1111_1111_1111,
+    0b1111_1111_1111_1111,
+    0b1111_1111_1111_1111,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+);
+
+const LEVEL_4_LOWER_HALF_MASK: u16x16 = u16x16::new(
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b1111_1111_1111_1111,
+    0b1111_1111_1111_1111,
+    0b1111_1111_1111_1111,
+    0b1111_1111_1111_1111,
+    0b1111_1111_1111_1111,
+    0b1111_1111_1111_1111,
+    0b1111_1111_1111_1111,
+    0b1111_1111_1111_1111,
+);
+
+const LEVEL_4_NW_MASK: u16x16 = u16x16::new(
+    0b1111_1111_0000_0000,
+    0b1111_1111_0000_0000,
+    0b1111_1111_0000_0000,
+    0b1111_1111_0000_0000,
+    0b1111_1111_0000_0000,
+    0b1111_1111_0000_0000,
+    0b1111_1111_0000_0000,
+    0b1111_1111_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+);
+
+const LEVEL_4_NE_MASK: u16x16 = u16x16::new(
+    0b0000_0000_1111_1111,
+    0b0000_0000_1111_1111,
+    0b0000_0000_1111_1111,
+    0b0000_0000_1111_1111,
+    0b0000_0000_1111_1111,
+    0b0000_0000_1111_1111,
+    0b0000_0000_1111_1111,
+    0b0000_0000_1111_1111,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+);
+
+const LEVEL_4_SW_MASK: u16x16 = u16x16::new(
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b1111_1111_0000_0000,
+    0b1111_1111_0000_0000,
+    0b1111_1111_0000_0000,
+    0b1111_1111_0000_0000,
+    0b1111_1111_0000_0000,
+    0b1111_1111_0000_0000,
+    0b1111_1111_0000_0000,
+    0b1111_1111_0000_0000,
+);
+
+const LEVEL_4_SE_MASK: u16x16 = u16x16::new(
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_0000_0000,
+    0b0000_0000_1111_1111,
+    0b0000_0000_1111_1111,
+    0b0000_0000_1111_1111,
+    0b0000_0000_1111_1111,
+    0b0000_0000_1111_1111,
+    0b0000_0000_1111_1111,
+    0b0000_0000_1111_1111,
+    0b0000_0000_1111_1111,
+);
 
 #[derive(Clone, Copy, Debug)]
 struct Counts {
@@ -121,7 +228,7 @@ fn center_jump_u16x16(
     sw_grid: u16x16,
     se_grid: u16x16,
 ) -> u16x16 {
-    let grid = center(nw_grid, ne_grid, sw_grid, se_grid);
+    let grid = center_of_four_u16x16(nw_grid, ne_grid, sw_grid, se_grid);
     jump_u16x16(grid)
 }
 
@@ -174,15 +281,15 @@ fn vert_u16x16(n: u16x16, s: u16x16) -> u16x16 {
 fn step_level_5(
     store: &mut Store,
     step_log_2: u8,
-    nw: NodeId,
-    ne: NodeId,
-    sw: NodeId,
-    se: NodeId,
-) -> NodeId {
-    let nw_grid = store.node(nw).unwrap_leaf();
-    let ne_grid = store.node(ne).unwrap_leaf();
-    let sw_grid = store.node(sw).unwrap_leaf();
-    let se_grid = store.node(se).unwrap_leaf();
+    nw: &Rc<Node>,
+    ne: &Rc<Node>,
+    sw: &Rc<Node>,
+    se: &Rc<Node>,
+) -> Rc<Node> {
+    let nw_grid = nw.grid();
+    let ne_grid = ne.grid();
+    let sw_grid = sw.grid();
+    let se_grid = se.grid();
 
     // +---+---+---+---+---+---+---+---+
     // |   |   |   |   |   |   |   |   |
@@ -206,7 +313,7 @@ fn step_level_5(
     let b = horiz_u16x16(nw_grid, ne_grid);
     let c = ne_grid;
     let d = vert_u16x16(nw_grid, sw_grid);
-    let e = center(nw_grid, ne_grid, sw_grid, se_grid);
+    let e = center_of_four_u16x16(nw_grid, ne_grid, sw_grid, se_grid);
     let f = vert_u16x16(ne_grid, se_grid);
     let g = sw_grid;
     let h = horiz_u16x16(sw_grid, se_grid);
@@ -239,11 +346,17 @@ fn step_level_5(
 }
 
 #[allow(clippy::many_single_char_names)]
-fn jump_level_5(store: &mut Store, nw: NodeId, ne: NodeId, sw: NodeId, se: NodeId) -> NodeId {
-    let nw_grid = store.node(nw).unwrap_leaf();
-    let ne_grid = store.node(ne).unwrap_leaf();
-    let sw_grid = store.node(sw).unwrap_leaf();
-    let se_grid = store.node(se).unwrap_leaf();
+fn jump_level_5(
+    store: &mut Store,
+    nw: &Rc<Node>,
+    ne: &Rc<Node>,
+    sw: &Rc<Node>,
+    se: &Rc<Node>,
+) -> Rc<Node> {
+    let nw_grid = nw.grid();
+    let ne_grid = ne.grid();
+    let sw_grid = sw.grid();
+    let se_grid = se.grid();
 
     // +---+---+---+---+---+---+---+---+
     // |   |   |   |   |   |   |   |   |
@@ -299,53 +412,43 @@ fn jump_level_5(store: &mut Store, nw: NodeId, ne: NodeId, sw: NodeId, se: NodeI
     store.create_leaf(combine_results_u16x16(w, x, y, z))
 }
 
-fn horiz_jump(store: &mut Store, w: NodeId, e: NodeId) -> NodeId {
-    let nw = w.ne(store);
-    let ne = e.nw(store);
-    let sw = w.se(store);
-    let se = e.sw(store);
+fn horiz_jump(store: &mut Store, w: &Rc<Node>, e: &Rc<Node>) -> Rc<Node> {
+    let nw = Node::ne(w);
+    let ne = e.nw();
+    let sw = w.se();
+    let se = e.sw();
 
     store
         .create_interior(NodeTemplate { nw, ne, sw, se })
         .jump(store)
 }
 
-fn vert_jump(store: &mut Store, n: NodeId, s: NodeId) -> NodeId {
-    let nw = n.sw(store);
-    let ne = n.se(store);
-    let sw = s.nw(store);
-    let se = s.ne(store);
+fn vert_jump(store: &mut Store, n: &Rc<Node>, s: &Rc<Node>) -> Rc<Node> {
+    let nw = n.sw();
+    let ne = n.se();
+    let sw = s.nw();
+    let se = Node::ne(s);
 
     store
         .create_interior(NodeTemplate { nw, ne, sw, se })
         .jump(store)
 }
 
-impl NodeId {
-    /// For a level `n` node, advances the node `2^(n-2)` generations into the future.
-    ///
-    /// Returns a level `n-1` node.
+impl Node {
     #[allow(clippy::many_single_char_names)]
-    pub fn jump(self, store: &mut Store) -> NodeId {
-        if let Some(jump) = store.get_jump(self) {
+    pub fn jump(&self, store: &mut Store) -> Rc<Node> {
+        if let Some(jump) = store.get_jump(&self) {
             return jump;
         }
 
-        match store.node(self) {
-            Node::Leaf { .. } => panic!(),
-            Node::Interior {
-                nw,
-                ne,
-                sw,
-                se,
-                level,
-                population,
-            } => {
-                if population == 0 {
-                    return store.create_empty(Level(level.0 - 1));
+        match &self.kind {
+            NodeKind::Leaf { .. } => panic!(),
+            NodeKind::Interior { nw, ne, sw, se } => {
+                if self.population == 0 {
+                    return store.create_empty(self.level - 1);
                 }
 
-                if level == Level(5) {
+                if self.level == 5 {
                     jump_level_5(store, nw, ne, sw, se)
                 } else {
                     // +---+---+---+---+---+---+---+---+
@@ -397,9 +500,9 @@ impl NodeId {
                     let w = store
                         .create_interior(NodeTemplate {
                             nw: a,
-                            ne: b,
-                            sw: d,
-                            se: e,
+                            ne: b.clone(),
+                            sw: d.clone(),
+                            se: e.clone(),
                         })
                         .jump(store);
 
@@ -407,17 +510,17 @@ impl NodeId {
                         .create_interior(NodeTemplate {
                             nw: b,
                             ne: c,
-                            sw: e,
-                            se: f,
+                            sw: e.clone(),
+                            se: f.clone(),
                         })
                         .jump(store);
 
                     let y = store
                         .create_interior(NodeTemplate {
                             nw: d,
-                            ne: e,
+                            ne: e.clone(),
                             sw: g,
-                            se: h,
+                            se: h.clone(),
                         })
                         .jump(store);
 
@@ -436,49 +539,37 @@ impl NodeId {
                         sw: y,
                         se: z,
                     });
-                    store.add_jump(self, jump);
+                    store.add_jump(self, jump.clone());
                     jump
                 }
             }
         }
     }
 
-    /// For a level `n` node, advances the node `step_size` generations into the future.
-    ///
-    /// The step size is determined by the store.
-    ///
-    /// Returns a level `n-1` node.
     #[allow(clippy::many_single_char_names)]
-    pub fn step(self, store: &mut Store) -> NodeId {
+    pub fn step(&self, store: &mut Store) -> Rc<Node> {
         if let Some(step) = store.get_step(self) {
             return step;
         }
 
         let step_log_2 = store.step_log_2();
 
-        match store.node(self) {
-            Node::Leaf { .. } => panic!(),
-            Node::Interior {
-                nw,
-                ne,
-                sw,
-                se,
-                level,
-                population,
-            } => {
-                if step_log_2 == level.0 - 2 {
+        match &self.kind {
+            NodeKind::Leaf { .. } => panic!(),
+            NodeKind::Interior { nw, ne, sw, se } => {
+                if step_log_2 == self.level - 2 {
                     let step = self.jump(store);
-                    store.add_step(self, step);
+                    store.add_step(self, step.clone());
                     return step;
                 }
 
-                if population == 0 {
-                    return store.create_empty(Level(level.0 - 1));
+                if self.population == 0 {
+                    return store.create_empty(self.level - 1);
                 }
 
-                if level == Level(5) {
+                if self.level == 5 {
                     let step = step_level_5(store, step_log_2, nw, ne, sw, se);
-                    store.add_step(self, step);
+                    store.add_step(self, step.clone());
                     step
                 } else {
                     // +---+---+---+---+---+---+---+---+
@@ -530,9 +621,9 @@ impl NodeId {
                     let w = store
                         .create_interior(NodeTemplate {
                             nw: a,
-                            ne: b,
-                            sw: d,
-                            se: e,
+                            ne: b.clone(),
+                            sw: d.clone(),
+                            se: e.clone(),
                         })
                         .step(store);
 
@@ -540,17 +631,17 @@ impl NodeId {
                         .create_interior(NodeTemplate {
                             nw: b,
                             ne: c,
-                            sw: e,
-                            se: f,
+                            sw: e.clone(),
+                            se: f.clone(),
                         })
                         .step(store);
 
                     let y = store
                         .create_interior(NodeTemplate {
                             nw: d,
-                            ne: e,
+                            ne: e.clone(),
                             sw: g,
-                            se: h,
+                            se: h.clone(),
                         })
                         .step(store);
 
@@ -569,286 +660,10 @@ impl NodeId {
                         sw: y,
                         se: z,
                     });
-                    store.add_step(self, step);
+                    store.add_step(self, step.clone());
                     step
                 }
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn nw_glider_jump() {
-        let mut store = Store::new();
-
-        let empty = store.create_empty(Level(4));
-        let glider = store.create_leaf(u16x16::new(
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0010,
-            0b0000_0000_0000_0001,
-            0b0000_0000_0000_0111,
-        ));
-
-        let level_5 = store.create_interior(NodeTemplate {
-            nw: glider,
-            ne: empty,
-            sw: empty,
-            se: empty,
-        });
-
-        let jump = level_5.jump(&mut store);
-        let expected_jump = store.create_leaf(u16x16::new(
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_1000_0000,
-            0b0000_0000_0100_0000,
-            0b0000_0001_1100_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-        ));
-
-        assert_eq!(jump, expected_jump);
-    }
-
-    #[test]
-    fn ne_glider_jump() {
-        let mut store = Store::new();
-
-        let empty = store.create_empty(Level(4));
-        let glider = store.create_leaf(u16x16::new(
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0100_0000_0000_0000,
-            0b1000_0000_0000_0000,
-            0b1110_0000_0000_0000,
-        ));
-
-        let level_5 = store.create_interior(NodeTemplate {
-            nw: empty,
-            ne: glider,
-            sw: empty,
-            se: empty,
-        });
-
-        let jump = level_5.jump(&mut store);
-        let expected_jump = store.create_leaf(u16x16::new(
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0001_0000_0000,
-            0b0000_0010_0000_0000,
-            0b0000_0011_1000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-        ));
-
-        assert_eq!(jump, expected_jump);
-    }
-
-    #[test]
-    fn sw_glider_jump() {
-        let mut store = Store::new();
-
-        let empty = store.create_empty(Level(4));
-        let glider = store.create_leaf(u16x16::new(
-            0b0000_0000_0000_0111,
-            0b0000_0000_0000_0001,
-            0b0000_0000_0000_0010,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-        ));
-
-        let level_5 = store.create_interior(NodeTemplate {
-            nw: empty,
-            ne: empty,
-            sw: glider,
-            se: empty,
-        });
-
-        let jump = level_5.jump(&mut store);
-        let expected_jump = store.create_leaf(u16x16::new(
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0001_1100_0000,
-            0b0000_0000_0100_0000,
-            0b0000_0000_1000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-        ));
-
-        assert_eq!(jump, expected_jump);
-    }
-
-    #[test]
-    fn se_glider_jump() {
-        let mut store = Store::new();
-
-        let empty = store.create_empty(Level(4));
-        let glider = store.create_leaf(u16x16::new(
-            0b1110_0000_0000_0000,
-            0b1000_0000_0000_0000,
-            0b0100_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-        ));
-
-        let level_5 = store.create_interior(NodeTemplate {
-            nw: empty,
-            ne: empty,
-            sw: empty,
-            se: glider,
-        });
-
-        let jump = level_5.jump(&mut store);
-        let expected_jump = store.create_leaf(u16x16::new(
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0011_1000_0000,
-            0b0000_0010_0000_0000,
-            0b0000_0001_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-        ));
-
-        assert_eq!(jump, expected_jump);
-    }
-
-    #[test]
-    fn nw_glider_step() {
-        let mut store = Store::new();
-        store.set_step_log_2(2);
-
-        let empty = store.create_empty(Level(4));
-        let glider = store.create_leaf(u16x16::new(
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0010,
-            0b0000_0000_0000_0001,
-            0b0000_0000_0000_0111,
-        ));
-
-        let level_5 = store.create_interior(NodeTemplate {
-            nw: glider,
-            ne: empty,
-            sw: empty,
-            se: empty,
-        });
-
-        let step = level_5.step(&mut store);
-        let expected_step = store.create_leaf(u16x16::new(
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0001_0000_0000,
-            0b0000_0000_1000_0000,
-            0b0000_0011_1000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-            0b0000_0000_0000_0000,
-        ));
-
-        assert_eq!(step, expected_step);
     }
 }
