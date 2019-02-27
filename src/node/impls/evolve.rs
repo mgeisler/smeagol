@@ -359,19 +359,14 @@ fn jump_level_5(store: &mut Store, nw: NodeId, ne: NodeId, sw: NodeId, se: NodeI
     let right = jump_u16x32(right);
     let middle = jump_u16x32(middle);
 
-    let a = shuffle!(left, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-    let d = shuffle!(left, [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]);
-    let g = shuffle!(left, [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]);
+    let LEFT_MASK = u16x32::splat(0b1111_1111_0000_0000);
+    let RIGHT_MASK = u16x32::splat(0b0000_0000_1111_1111);
 
-    let c = shuffle!(right, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-    let f = shuffle!(right, [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]);
-    let i = shuffle!(right, [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]);
+    let wy = ((left << 4) & LEFT_MASK) | ((middle >> 4) & RIGHT_MASK);
+    let wy = jump_u16x32(wy);
 
-    let b = shuffle!(middle, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-    let e = shuffle!(middle, [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]);
-    let h = shuffle!(middle, [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]);
-
-    // let i = jump_u16x16(se_grid);
+    let xz = ((middle << 4) & LEFT_MASK) | ((right >> 4) & RIGHT_MASK);
+    let xz = jump_u16x32(xz);
 
     // +---+---+---+---+---+---+---+---+
     // |   |   |   |   |   |   |   |   |
@@ -391,10 +386,10 @@ fn jump_level_5(store: &mut Store, nw: NodeId, ne: NodeId, sw: NodeId, se: NodeI
     // |   |   |   |   |   |   |   |   |
     // +---+---+---+---+---+---+---+---+
 
-    let w = jump_u16x16(combine_results_u16x16(a, b, d, e));
-    let x = jump_u16x16(combine_results_u16x16(b, c, e, f));
-    let y = jump_u16x16(combine_results_u16x16(d, e, g, h));
-    let z = jump_u16x16(combine_results_u16x16(e, f, h, i));
+    let w = shuffle!(wy, [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+    let y = shuffle!(wy, [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]);
+    let x = shuffle!(xz, [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+    let z = shuffle!(xz, [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]);
 
     store.create_leaf(combine_results_u16x16(w, x, y, z))
 }
